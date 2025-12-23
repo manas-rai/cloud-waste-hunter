@@ -51,7 +51,7 @@ cloud-waste-hunter/
 - Python 3.12+ (recommended: 3.12.12)
 - [uv](https://github.com/astral-sh/uv) - Fast Python package installer (install with: `curl -LsSf https://astral.sh/uv/install.sh | sh`)
 - Node.js 18+
-- PostgreSQL 14+
+- PostgreSQL 18
 - AWS Account with appropriate IAM permissions
 
 ### Installation

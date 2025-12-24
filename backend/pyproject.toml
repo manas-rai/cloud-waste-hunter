@@ -47,6 +47,8 @@ dev = [
     # Linting & Formatting
     "black>=24.8.0",
     "mypy>=1.11.0",
+    "ruff>=0.8.0",
+    "pre-commit>=3.8.0",
 ]
 
 [build-system]
@@ -63,6 +65,8 @@ dev = [
     "pytest-cov>=6.0.0",
     "black>=24.8.0",
     "mypy>=1.11.0",
+    "ruff>=0.8.0",
+    "pre-commit>=3.8.0",
 ]
 
 # Black configuration
@@ -94,14 +98,55 @@ module = ["app.*"]
 disallow_untyped_defs = true
 warn_return_any = false
 
-# Ruff configuration (optional linter)
+# Ruff configuration
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    "dist",
+    "build",
+    ".pytest_cache",
+]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
-ignore = ["E501"]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "T20", # flake8-print
+    "SIM", # flake8-simplify
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "ERA", # eradicate (commented code)
+    "PD",  # pandas-vet
+    "PL",  # Pylint
+    "TRY", # tryceratops
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "PLR0913", # too many arguments
+    "PLR2004", # magic value used in comparison
+    "TRY003", # avoid specifying long messages outside exception class
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # unused imports allowed in __init__.py
+"tests/**/*.py" = ["ARG", "PLR2004", "S101"]  # allow test-specific patterns
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -1,0 +1,70 @@
+repos:
+  # Backend: Python formatting and linting
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^frontend/
+      - id: end-of-file-fixer
+        exclude: ^frontend/
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+
+  # Backend: Ruff (fast Python linter)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  # Backend: Black (Python formatter - as backup/consistency check)
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        files: ^backend/
+        args: [--check]
+
+  # Backend: mypy (type checking)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.0
+    hooks:
+      - id: mypy
+        files: ^backend/
+        additional_dependencies: [
+          types-all,
+          fastapi,
+          pydantic,
+          sqlalchemy,
+          boto3-stubs,
+        ]
+        args: [--ignore-missing-imports, --no-strict-optional]
+
+  # Frontend: Prettier (code formatter)
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.2.2
+    hooks:
+      - id: prettier
+        files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|scss|md|yml|yaml)$
+        additional_dependencies:
+          - prettier@3.2.5
+          - prettier-plugin-tailwindcss@0.5.11
+
+  # Frontend: ESLint (using local hook since Next.js has its own config)
+  - repo: local
+    hooks:
+      - id: eslint-frontend
+        name: ESLint (Frontend)
+        entry: bash -c 'cd frontend && npm run lint:fix'
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        always_run: false

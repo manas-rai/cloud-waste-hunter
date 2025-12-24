@@ -109,8 +109,8 @@ async def init_db():
     """Initialize database (create tables) - for startup"""
     async with async_engine.begin() as conn:
         # Import all models to register them
-        from app.models.detection import Detection
-        from app.models.audit import AuditLog
+        from app.schemas.detection import Detection
+        from app.schemas.audit import AuditLog
         await conn.run_sync(Base.metadata.create_all)
 
 

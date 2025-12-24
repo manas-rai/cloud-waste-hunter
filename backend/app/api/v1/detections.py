@@ -10,12 +10,11 @@ This layer handles HTTP concerns only:
 Business logic is delegated to the service layer.
 """
 
-from ast import Dict
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
-from app.models.detection import DetectionPayload
-from app.models.base import get_db
+from app.schemas.base import get_db
+from app.models.detection_models import DetectionPayload
 from app.services.detection_service import detection_service
 from app.services.action_service import action_service
 import structlog

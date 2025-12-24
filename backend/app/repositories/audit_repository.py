@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
-from app.models.audit import AuditLog, ActionStatus
+from app.schemas.audit import AuditLog, AuditStatus
 import structlog
 
 logger = structlog.get_logger()
@@ -51,7 +51,7 @@ class AuditRepository:
             stmt = stmt.where(AuditLog.action_type == action_type)
         
         if status:
-            stmt = stmt.where(AuditLog.status == ActionStatus(status))
+            stmt = stmt.where(AuditLog.status == AuditStatus(status))
         
         if resource_id:
             stmt = stmt.where(AuditLog.resource_id == resource_id)
@@ -107,7 +107,7 @@ class AuditRepository:
         stmt = select(AuditLog).where(
             and_(
                 AuditLog.can_rollback == True,
-                AuditLog.status == ActionStatus.SUCCESS,
+                AuditLog.status == AuditStatus.SUCCESS,
                 AuditLog.rolled_back_at.is_(None),
                 AuditLog.executed_at >= cutoff_date,
                 AuditLog.dry_run == False,
@@ -187,7 +187,7 @@ class AuditRepository:
     async def count_by_status(
         self,
         db: AsyncSession,
-        status: ActionStatus,
+        status: AuditStatus,
     ) -> int:
         """
         Count audit logs by status

@@ -6,8 +6,8 @@ from typing import Dict, List, Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.detection import Detection, DetectionStatus
-from app.models.audit import AuditLog, ActionType, ActionStatus
+from app.schemas.detection import Detection, DetectionStatus
+from app.schemas.audit import AuditLog, ActionType, AuditStatus
 from app.aws.client import AWSClientFactory
 from app.safety.executor import SafeExecutor
 from app.safety.dry_run import DryRunExecutor
@@ -223,9 +223,9 @@ class ActionService:
             resource_type=detection.resource_type.value,
             resource_id=detection.resource_id,
             status=(
-                ActionStatus.SUCCESS
+                AuditStatus.SUCCESS
                 if action_result.get("success")
-                else ActionStatus.FAILED
+                else AuditStatus.FAILED
             ),
             executed_by=approved_by,
             executed_at=datetime.now(timezone.utc),
@@ -263,7 +263,7 @@ class ActionService:
             action_type=action_type_map[detection.resource_type.value],
             resource_type=detection.resource_type.value,
             resource_id=detection.resource_id,
-            status=ActionStatus.FAILED,
+            status=AuditStatus.FAILED,
             executed_by=approved_by,
             executed_at=datetime.now(timezone.utc),
             dry_run=dry_run,

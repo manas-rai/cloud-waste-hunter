@@ -1,10 +1,9 @@
 """
-Audit Log Models
+Audit Log Database Schema (SQLAlchemy Model)
 """
 
 from sqlalchemy import Column, String, Integer, JSON, Enum, DateTime, ForeignKey, Boolean, Text, func
-from app.models.base import Base, TimestampMixin
-from datetime import datetime
+from app.schemas.base import Base, TimestampMixin
 import enum
 
 
@@ -17,8 +16,8 @@ class ActionType(str, enum.Enum):
     ROLLBACK = "rollback"
 
 
-class ActionStatus(str, enum.Enum):
-    """Action execution status"""
+class AuditStatus(str, enum.Enum):
+    """Audit log status"""
 
     PENDING = "pending"
     SUCCESS = "success"
@@ -27,7 +26,7 @@ class ActionStatus(str, enum.Enum):
 
 
 class AuditLog(Base, TimestampMixin):
-    """Audit log for all actions"""
+    """Audit log database model (table)"""
 
     __tablename__ = "audit_logs"
 
@@ -40,7 +39,7 @@ class AuditLog(Base, TimestampMixin):
     resource_type = Column(String(50), nullable=False)
     resource_id = Column(String(255), nullable=False, index=True)
 
-    status = Column(Enum(ActionStatus), default=ActionStatus.PENDING, index=True)
+    status = Column(Enum(AuditStatus), default=AuditStatus.PENDING, index=True)
 
     # Who and when
     executed_by = Column(String(255), nullable=False)

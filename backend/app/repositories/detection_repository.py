@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.models.detection import Detection, DetectionStatus
+from app.schemas.detection import Detection, DetectionStatus
 import structlog
 
 logger = structlog.get_logger()

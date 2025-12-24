@@ -12,37 +12,18 @@ Business logic is delegated to the service layer.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
-from typing import List
-from app.models.base import get_db
+from app.schemas.base import get_db
 from app.services.action_service import action_service
+from app.models.action_models import (
+    ApprovalRequest,
+    BatchApprovalRequest,
+    BatchRejectRequest,
+)
 import structlog
 
 logger = structlog.get_logger()
 
 router = APIRouter()
-
-
-class ApprovalRequest(BaseModel):
-    """Approval request model"""
-
-    approved_by: str
-    dry_run: bool = False
-
-
-class BatchApprovalRequest(BaseModel):
-    """Batch approval request"""
-
-    detection_ids: List[int]
-    approved_by: str
-    dry_run: bool = False
-
-
-class BatchRejectRequest(BaseModel):
-    """Batch rejection request"""
-    
-    detection_ids: List[int]
-    approved_by: str = "user@example.com"
 
 
 # =============================================================================

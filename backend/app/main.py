@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import api_router
-from app.models.base import init_db, close_db
+from app.schemas.base import init_db, close_db
 
 
 @asynccontextmanager

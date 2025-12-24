@@ -13,9 +13,9 @@ from pathlib import Path
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.models.base import async_engine, Base
-from app.models.detection import Detection
-from app.models.audit import AuditLog
+from app.schemas.base import async_engine, Base
+from app.schemas.detection import Detection
+from app.schemas.audit import AuditLog
 
 
 async def init_database(drop_existing: bool = False):

@@ -7,17 +7,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1 import api_router
-from app.models.base import init_db, close_db
+from app.database import close_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
-    Handles startup and shutdown events.
+    
+    Startup: Nothing needed (tables already exist from one-time setup)
+    Shutdown: Close database connection pool
     """
-    # Startup: Initialize database
-    await init_db()
     yield
     # Shutdown: Close database connections
     await close_db()

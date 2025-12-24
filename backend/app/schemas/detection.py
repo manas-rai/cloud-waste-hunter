@@ -1,13 +1,10 @@
 """
-Detection Models
+Detection Database Schema (SQLAlchemy Model)
 """
 
-from sqlalchemy import Column, String, Float, Integer, JSON, ForeignKey, Enum, DateTime
-from sqlalchemy.orm import mapped_column
-from app.models.base import Base, TimestampMixin
+from sqlalchemy import Column, String, Float, Integer, JSON, Enum, DateTime
+from app.schemas.base import Base, TimestampMixin
 import enum
-from typing import List
-from pydantic import BaseModel, Field
 
 
 class ResourceType(str, enum.Enum):
@@ -29,7 +26,7 @@ class DetectionStatus(str, enum.Enum):
 
 
 class Detection(Base, TimestampMixin):
-    """Detection result model"""
+    """Detection database model (table)"""
 
     __tablename__ = "detections"
 
@@ -58,7 +55,7 @@ class Detection(Base, TimestampMixin):
     # For Snapshots: size_gb, age_days
 
     def to_dict(self):
-        """Convert to dictionary"""
+        """Convert to dictionary for API responses"""
         return {
             "id": self.id,
             "resource_type": self.resource_type.value if self.resource_type else None,
@@ -74,6 +71,3 @@ class Detection(Base, TimestampMixin):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-
-class DetectionPayload(BaseModel):
-    resource_types: List[ResourceType] = Field(default_factory=lambda: [ResourceType.EC2_INSTANCE, ResourceType.EBS_VOLUME, ResourceType.EBS_SNAPSHOT])

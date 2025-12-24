@@ -15,7 +15,7 @@ from app.detection.ec2_detector import EC2IdleDetector
 from app.detection.ebs_detector import EBSUnattachedDetector
 from app.detection.snapshot_detector import SnapshotDetector
 from app.repositories.detection_repository import detection_repository
-from app.models.detection import ResourceType
+from app.schemas.detection import ResourceType
 import structlog
 
 logger = structlog.get_logger()

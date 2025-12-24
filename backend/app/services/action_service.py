@@ -6,8 +6,8 @@ from typing import Dict, List, Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.detection import Detection, DetectionStatus
-from app.models.audit import AuditLog, ActionType, ActionStatus
+from app.schemas.detection import Detection, DetectionStatus, ResourceType
+from app.schemas.audit import AuditLog, ActionType, AuditStatus
 from app.aws.client import AWSClientFactory
 from app.safety.executor import SafeExecutor
 from app.safety.dry_run import DryRunExecutor
@@ -212,9 +212,9 @@ class ActionService:
         """Create audit log for action via repository"""
         # Map resource type to action type
         action_type_map = {
-            "ec2_instance": ActionType.STOP_EC2,
-            "ebs_volume": ActionType.DELETE_EBS_VOLUME,
-            "ebs_snapshot": ActionType.DELETE_SNAPSHOT,
+            ResourceType.EC2_INSTANCE.value: ActionType.STOP_EC2,
+            ResourceType.EBS_VOLUME.value: ActionType.DELETE_EBS_VOLUME,
+            ResourceType.EBS_SNAPSHOT.value: ActionType.DELETE_SNAPSHOT,
         }
         
         audit_log = AuditLog(
@@ -223,9 +223,9 @@ class ActionService:
             resource_type=detection.resource_type.value,
             resource_id=detection.resource_id,
             status=(
-                ActionStatus.SUCCESS
+                AuditStatus.SUCCESS
                 if action_result.get("success")
-                else ActionStatus.FAILED
+                else AuditStatus.FAILED
             ),
             executed_by=approved_by,
             executed_at=datetime.now(timezone.utc),
@@ -233,7 +233,7 @@ class ActionService:
             result=action_result,
             error_message=action_result.get("error"),
             can_rollback=(
-                detection.resource_type.value == "ec2_instance" 
+                detection.resource_type.value == ResourceType.EC2_INSTANCE.value
                 and not dry_run 
                 and action_result.get("success")
             ),
@@ -253,9 +253,9 @@ class ActionService:
         """Create audit log for failed action"""
         # Map resource type to action type
         action_type_map = {
-            "ec2_instance": ActionType.STOP_EC2,
-            "ebs_volume": ActionType.DELETE_EBS_VOLUME,
-            "ebs_snapshot": ActionType.DELETE_SNAPSHOT,
+            ResourceType.EC2_INSTANCE.value: ActionType.STOP_EC2,
+            ResourceType.EBS_VOLUME.value: ActionType.DELETE_EBS_VOLUME,
+            ResourceType.EBS_SNAPSHOT.value: ActionType.DELETE_SNAPSHOT,
         }
         
         audit_log = AuditLog(
@@ -263,7 +263,7 @@ class ActionService:
             action_type=action_type_map[detection.resource_type.value],
             resource_type=detection.resource_type.value,
             resource_id=detection.resource_id,
-            status=ActionStatus.FAILED,
+            status=AuditStatus.FAILED,
             executed_by=approved_by,
             executed_at=datetime.now(timezone.utc),
             dry_run=dry_run,
@@ -271,6 +271,51 @@ class ActionService:
             error_message=error_message,
             can_rollback=False,  # Failed actions cannot be rolled back
             meta_data={"failure_recorded": True},
+        )
+        
+        return await audit_repository.create(db, audit_log)
+    
+    async def _create_rejection_audit_log(
+        self,
+        db: AsyncSession,
+        detection: Detection,
+        rejected_by: str,
+    ) -> AuditLog:
+        """
+        Create audit log for rejection (when user decides NOT to execute action)
+        
+        This tracks the decision to NOT act on a detection, providing
+        a complete audit trail of all user decisions.
+        """
+        # Map resource type to action type (what WOULD have been done)
+        action_type_map = {
+            ResourceType.EC2_INSTANCE.value: ActionType.STOP_EC2,
+            ResourceType.EBS_VOLUME.value: ActionType.DELETE_EBS_VOLUME,
+            ResourceType.EBS_SNAPSHOT.value: ActionType.DELETE_SNAPSHOT,
+        }
+        
+        audit_log = AuditLog(
+            detection_id=detection.id,
+            action_type=action_type_map[detection.resource_type.value],
+            resource_type=detection.resource_type.value,
+            resource_id=detection.resource_id,
+            status=AuditStatus.FAILED,  # Rejection is recorded as FAILED (action not taken)
+            executed_by=rejected_by,
+            executed_at=datetime.now(timezone.utc),
+            dry_run=False,
+            result={
+                "success": False,
+                "rejected": True,
+                "message": f"Detection rejected by {rejected_by}",
+                "action": "rejection",
+            },
+            error_message=None,
+            can_rollback=False,  # Rejections cannot be rolled back (no action was taken)
+            meta_data={
+                "rejection_reason": "User decided not to execute this action",
+                "detection_confidence": detection.confidence_score,
+                "estimated_savings": detection.estimated_monthly_savings_inr,
+            },
         )
         
         return await audit_repository.create(db, audit_log)
@@ -306,9 +351,22 @@ class ActionService:
         detection.approved_by = approved_by
         detection.approved_at = datetime.now(timezone.utc)
         
-        logger.info("Detection rejected", detection_id=detection_id, approved_by=approved_by)
+        # Create audit log for rejection
+        rejection_audit_log = await self._create_rejection_audit_log(
+            db,
+            detection,
+            approved_by,
+        )
+        
+        logger.info(
+            "Detection rejected",
+            detection_id=detection_id,
+            approved_by=approved_by,
+            audit_log_id=rejection_audit_log.id,
+        )
         
         # TRANSACTION COMMITS automatically in get_db() when function returns
+        # Both detection update and audit log are committed together
         return detection
 
     async def preview_batch_actions(

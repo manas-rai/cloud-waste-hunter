@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.audit import AuditLog, ActionStatus
+from app.schemas.audit import AuditLog, AuditStatus
 from app.aws.client import AWSClientFactory
 from app.safety.rollback import RollbackExecutor
 from app.repositories.audit_repository import audit_repository
@@ -153,7 +153,7 @@ class AuditService:
         
         # Update audit log
         # SQLAlchemy tracks these changes automatically
-        log.status = ActionStatus.ROLLED_BACK
+        log.status = AuditStatus.ROLLED_BACK
         log.rolled_back_at = datetime.now(timezone.utc)
         log.rolled_back_by = rolled_back_by
         log.result = {**log.result, "rollback": rollback_result}

@@ -1,52 +1,22 @@
 """
-Base Database Models with Async Session Management
+PostgreSQL Database Engine and Session Management
+
+This module handles all PostgreSQL-specific database operations:
+- Database engine creation
+- Session factory
+- Connection lifecycle management
+- FastAPI dependency injection
 """
 
-from sqlalchemy import (
-    Column,
-    Integer,
-    DateTime,
-    String,
-    Boolean,
-    JSON,
-    Float,
-    Text,
-    func,
-)
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     AsyncSession,
     async_sessionmaker,
 )
-from sqlalchemy.orm import DeclarativeBase, declared_attr
-from datetime import datetime, timezone
 from typing import AsyncGenerator
-from contextlib import asynccontextmanager
 from app.core.config import settings
 
 
-class Base(DeclarativeBase):
-    """Base class for all database models"""
-    pass
-
-
-class TimestampMixin:
-    """Mixin for created_at and updated_at timestamps"""
-
-    created_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-
-# Convert sync DATABASE_URL to async
 def get_async_database_url() -> str:
     """Convert PostgreSQL URL to asyncpg format"""
     url = settings.DATABASE_URL
@@ -105,15 +75,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def init_db():
-    """Initialize database (create tables) - for startup"""
-    async with async_engine.begin() as conn:
-        # Import all models to register them
-        from app.models.detection import Detection
-        from app.models.audit import AuditLog
-        await conn.run_sync(Base.metadata.create_all)
-
-
 async def close_db():
-    """Close database connections - for shutdown"""
+    """
+    Close database connections - for application shutdown
+    
+    This should be called when the application is shutting down to
+    properly dispose of all database connections in the pool.
+    """
     await async_engine.dispose()
+

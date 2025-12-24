@@ -6,10 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "^14.2.35",
@@ -29,12 +26,9 @@
   },
   "devDependencies": {
     "eslint": "^8.56.0",
-    "eslint-config-next": "^14.2.35",
-    "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.11"
+    "eslint-config-next": "^14.2.35"
   },
   "overrides": {
     "glob": "^10.5.0"
   }
 }
-

@@ -1,12 +1,10 @@
 repos:
   # Backend: Python formatting and linting
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^frontend/
       - id: end-of-file-fixer
-        exclude: ^frontend/
       - id: check-yaml
       - id: check-json
       - id: check-toml
@@ -17,7 +15,7 @@ repos:
 
   # Backend: Ruff (fast Python linter)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0
+    rev: v0.8.4
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -40,31 +38,7 @@ repos:
       - id: mypy
         files: ^backend/
         additional_dependencies: [
-          types-all,
-          fastapi,
-          pydantic,
-          sqlalchemy,
+          types-requests,
           boto3-stubs,
         ]
         args: [--ignore-missing-imports, --no-strict-optional]
-
-  # Frontend: Prettier (code formatter)
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.2.2
-    hooks:
-      - id: prettier
-        files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|scss|md|yml|yaml)$
-        additional_dependencies:
-          - prettier@3.2.5
-          - prettier-plugin-tailwindcss@0.5.11
-
-  # Frontend: ESLint (using local hook since Next.js has its own config)
-  - repo: local
-    hooks:
-      - id: eslint-frontend
-        name: ESLint (Frontend)
-        entry: bash -c 'cd frontend && npm run lint:fix'
-        language: system
-        files: ^frontend/.*\.(js|jsx|ts|tsx)$
-        pass_filenames: false
-        always_run: false

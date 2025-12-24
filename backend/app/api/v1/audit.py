@@ -13,7 +13,7 @@ Business logic is delegated to the service layer.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
-from app.schemas.base import get_db
+from app.database import get_db
 from app.models.audit_models import RollbackRequest
 from app.services.audit_service import audit_service
 from app.core.config import settings

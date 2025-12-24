@@ -1,20 +1,17 @@
 """
 Database Schemas (SQLAlchemy Models)
 
-This package contains all SQLAlchemy ORM models representing database tables:
+This package contains ONLY SQLAlchemy ORM models representing database tables:
 - Base classes and mixins
-- Database models (tables)
+- Database table models
 - Enums for database fields
+
+Database engine and session management is in app.database.postgres
 """
 
 from app.schemas.base import (
     Base,
     TimestampMixin,
-    async_engine,
-    AsyncSessionLocal,
-    get_db,
-    init_db,
-    close_db,
 )
 from app.schemas.detection import (
     Detection,
@@ -31,11 +28,6 @@ __all__ = [
     # Base
     "Base",
     "TimestampMixin",
-    "async_engine",
-    "AsyncSessionLocal",
-    "get_db",
-    "init_db",
-    "close_db",
     # Detection
     "Detection",
     "ResourceType",

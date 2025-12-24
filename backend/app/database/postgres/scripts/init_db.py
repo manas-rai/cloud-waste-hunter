@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Database Initialization Script
+PostgreSQL Database Initialization Script
 
 Simple script to create database tables locally.
 No migrations needed for MVP - just drop and recreate.
@@ -11,9 +11,10 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path to import app modules
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from app.schemas.base import async_engine, Base
+from app.database.postgres.engine import async_engine
+from app.schemas.base import Base
 from app.schemas.detection import Detection
 from app.schemas.audit import AuditLog
 
@@ -25,7 +26,7 @@ async def init_database(drop_existing: bool = False):
     Args:
         drop_existing: If True, drops existing tables before creating
     """
-    print("🔧 Initializing database...")
+    print("🔧 Initializing PostgreSQL database...")
     
     async with async_engine.begin() as conn:
         if drop_existing:
@@ -45,7 +46,7 @@ async def init_database(drop_existing: bool = False):
 
 async def drop_database():
     """Drop all tables"""
-    print("⚠️  WARNING: Dropping all tables...")
+    print("⚠️  WARNING: Dropping all PostgreSQL tables...")
     
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -58,7 +59,7 @@ async def show_tables():
     """Show existing tables"""
     from sqlalchemy import text
     
-    print("📊 Existing tables:")
+    print("📊 Existing PostgreSQL tables:")
     
     async with async_engine.connect() as conn:
         result = await conn.execute(text("""
@@ -83,7 +84,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description="Database initialization script for Cloud Waste Hunter"
+        description="PostgreSQL database initialization script for Cloud Waste Hunter"
     )
     parser.add_argument(
         "--drop",

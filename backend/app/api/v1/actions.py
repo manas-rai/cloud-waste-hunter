@@ -163,7 +163,7 @@ async def reject_batch_detections(
                     {
                         "detection_id": detection_id,
                         "success": True,
-                        "detection": detection.to_dict(),
+                        "detection": detection,
                     }
                 )
             except Exception as e:
@@ -272,13 +272,11 @@ async def reject_detection(
             detection_id=detection_id,
             approved_by=approved_by,
         )
-        detection_dict = detection.to_dict()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         logger.exception(
             "Reject detection failed",
-            detection_id=detection_id,
             error=str(e),
             exc_info=True,
         )
@@ -287,4 +285,4 @@ async def reject_detection(
             detail=f"Failed to reject detection: {e!s}",
         ) from e
 
-    return detection_dict
+    return detection

@@ -10,16 +10,17 @@ This layer handles HTTP concerns only:
 Business logic is delegated to the service layer.
 """
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
-from app.services.action_service import action_service
 from app.models.action_models import (
     ApprovalRequest,
     BatchApprovalRequest,
     BatchRejectRequest,
 )
-import structlog
+from app.services.action_service import action_service
 
 logger = structlog.get_logger()
 
@@ -29,6 +30,7 @@ router = APIRouter()
 # =============================================================================
 # BATCH ROUTES (must come BEFORE parameterized routes)
 # =============================================================================
+
 
 @router.post("/batch/preview")
 async def preview_batch_actions(
@@ -49,11 +51,10 @@ async def preview_batch_actions(
             db=db,
             detection_ids=request.detection_ids,
         )
-        return preview
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(
+        logger.exception(
             "Preview batch actions failed",
             detection_ids=request.detection_ids,
             error=str(e),
@@ -61,8 +62,10 @@ async def preview_batch_actions(
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to preview batch actions: {str(e)}",
-        )
+            detail=f"Failed to preview batch actions: {e!s}",
+        ) from e
+
+    return preview
 
 
 @router.post("/batch/approve")
@@ -89,27 +92,31 @@ async def approve_batch_actions(
                     approved_by=request.approved_by,
                     dry_run=request.dry_run,
                 )
-                results.append({
-                    "detection_id": detection_id,
-                    "success": True,
-                    "result": result,
-                })
+                results.append(
+                    {
+                        "detection_id": detection_id,
+                        "success": True,
+                        "result": result,
+                    }
+                )
             except Exception as e:
-                logger.error(
+                logger.exception(
                     "Batch approve failed for detection",
                     detection_id=detection_id,
                     error=str(e),
                 )
-                results.append({
-                    "detection_id": detection_id,
-                    "success": False,
-                    "error": str(e),
-                })
-        
+                results.append(
+                    {
+                        "detection_id": detection_id,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
+
         # Summary
         success_count = sum(1 for r in results if r["success"])
         failed_count = len(results) - success_count
-        
+
         return {
             "total": len(results),
             "success": success_count,
@@ -117,7 +124,7 @@ async def approve_batch_actions(
             "results": results,
         }
     except Exception as e:
-        logger.error(
+        logger.exception(
             "Batch approve failed",
             detection_ids=request.detection_ids,
             error=str(e),
@@ -125,8 +132,8 @@ async def approve_batch_actions(
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to approve batch actions: {str(e)}",
-        )
+            detail=f"Failed to approve batch actions: {e!s}",
+        ) from e
 
 
 @router.post("/batch/reject")
@@ -152,27 +159,31 @@ async def reject_batch_detections(
                     detection_id=detection_id,
                     approved_by=request.approved_by,
                 )
-                results.append({
-                    "detection_id": detection_id,
-                    "success": True,
-                    "detection": detection.to_dict(),
-                })
+                results.append(
+                    {
+                        "detection_id": detection_id,
+                        "success": True,
+                        "detection": detection,
+                    }
+                )
             except Exception as e:
-                logger.error(
+                logger.exception(
                     "Batch reject failed for detection",
                     detection_id=detection_id,
                     error=str(e),
                 )
-                results.append({
-                    "detection_id": detection_id,
-                    "success": False,
-                    "error": str(e),
-                })
-        
+                results.append(
+                    {
+                        "detection_id": detection_id,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
+
         # Summary
         success_count = sum(1 for r in results if r["success"])
         failed_count = len(results) - success_count
-        
+
         return {
             "total": len(results),
             "success": success_count,
@@ -180,7 +191,7 @@ async def reject_batch_detections(
             "results": results,
         }
     except Exception as e:
-        logger.error(
+        logger.exception(
             "Batch reject failed",
             detection_ids=request.detection_ids,
             error=str(e),
@@ -188,13 +199,14 @@ async def reject_batch_detections(
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to reject batch detections: {str(e)}",
-        )
+            detail=f"Failed to reject batch detections: {e!s}",
+        ) from e
 
 
 # =============================================================================
 # SINGLE DETECTION ROUTES (parameterized - must come AFTER specific routes)
 # =============================================================================
+
 
 @router.post("/{detection_id}/approve")
 async def approve_detection(
@@ -219,13 +231,12 @@ async def approve_detection(
             approved_by=request.approved_by,
             dry_run=request.dry_run,
         )
-        return result
     except ValueError as e:
         # Business logic errors (not found, invalid status, etc.)
         status_code = 404 if "not found" in str(e).lower() else 400
-        raise HTTPException(status_code=status_code, detail=str(e))
+        raise HTTPException(status_code=status_code, detail=str(e)) from e
     except Exception as e:
-        logger.error(
+        logger.exception(
             "Approve detection failed",
             detection_id=detection_id,
             error=str(e),
@@ -233,8 +244,10 @@ async def approve_detection(
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to approve detection: {str(e)}",
-        )
+            detail=f"Failed to approve detection: {e!s}",
+        ) from e
+
+    return result
 
 
 @router.post("/{detection_id}/reject")
@@ -259,17 +272,17 @@ async def reject_detection(
             detection_id=detection_id,
             approved_by=approved_by,
         )
-        return detection.to_dict()
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(
+        logger.exception(
             "Reject detection failed",
-            detection_id=detection_id,
             error=str(e),
             exc_info=True,
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to reject detection: {str(e)}",
-        )
+            detail=f"Failed to reject detection: {e!s}",
+        ) from e
+
+    return detection

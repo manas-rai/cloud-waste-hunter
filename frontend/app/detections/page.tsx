@@ -33,8 +33,8 @@ export default function DetectionsPage() {
       })
   }, [])
 
-  const filteredDetections = filter === 'all' 
-    ? detections 
+  const filteredDetections = filter === 'all'
+    ? detections
     : detections.filter(d => d.status === filter)
 
   const getStatusColor = (status: string) => {
@@ -182,4 +182,3 @@ export default function DetectionsPage() {
     </div>
   )
 }
-

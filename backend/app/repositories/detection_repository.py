@@ -2,12 +2,13 @@
 Detection Repository - Data access for Detection model
 """
 
-from typing import List, Optional, Dict, Tuple
+from datetime import UTC, datetime
+
+import structlog
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 
 from app.schemas.detection import Detection, DetectionStatus
-import structlog
 
 logger = structlog.get_logger()
 
@@ -15,7 +16,7 @@ logger = structlog.get_logger()
 class DetectionRepository:
     """
     Repository for Detection model
-    
+
     Encapsulates all database operations for Detection entity.
     Service layer uses this instead of direct database queries.
     """
@@ -23,57 +24,57 @@ class DetectionRepository:
     async def find_all(
         self,
         db: AsyncSession,
-        status: Optional[str] = None,
-        resource_type: Optional[str] = None,
+        status: str | None = None,
+        resource_type: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> Tuple[List[Detection], int]:
+    ) -> tuple[list[Detection], int]:
         """
         Find detections with filters and pagination
-        
+
         Args:
             db: Database session
             status: Filter by status
             resource_type: Filter by resource type
             limit: Page size
             offset: Pagination offset
-            
+
         Returns:
             Tuple of (detections list, total count)
         """
         # Build query
         stmt = select(Detection)
-        
+
         if status:
             stmt = stmt.where(Detection.status == DetectionStatus(status))
-        
+
         if resource_type:
             stmt = stmt.where(Detection.resource_type == resource_type)
-        
+
         # Get total count
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_result = await db.execute(count_stmt)
         total = total_result.scalar_one()
-        
+
         # Get paginated results
         stmt = stmt.order_by(Detection.created_at.desc()).offset(offset).limit(limit)
         result = await db.execute(stmt)
         detections = result.scalars().all()
-        
+
         return list(detections), total
 
     async def find_by_id(
         self,
         db: AsyncSession,
         detection_id: int,
-    ) -> Optional[Detection]:
+    ) -> Detection | None:
         """
         Find detection by ID
-        
+
         Args:
             db: Database session
             detection_id: Detection ID
-            
+
         Returns:
             Detection object or None
         """
@@ -84,15 +85,15 @@ class DetectionRepository:
     async def find_by_ids(
         self,
         db: AsyncSession,
-        detection_ids: List[int],
-    ) -> List[Detection]:
+        detection_ids: list[int],
+    ) -> list[Detection]:
         """
         Find multiple detections by IDs
-        
+
         Args:
             db: Database session
             detection_ids: List of detection IDs
-            
+
         Returns:
             List of Detection objects
         """
@@ -103,23 +104,21 @@ class DetectionRepository:
     async def save_many(
         self,
         db: AsyncSession,
-        detections: List[Dict],
-    ) -> List[Detection]:
+        detections: list[dict],
+    ) -> list[Detection]:
         """
         Bulk save detections
-        
+
         Args:
             db: Database session
             detections: List of detection dictionaries
-            
+
         Returns:
             List of saved Detection objects
         """
-        from datetime import datetime, timezone
-        
         db_detections = []
-        now = datetime.now(timezone.utc)
-        
+        now = datetime.now(UTC)
+
         for detection in detections:
             db_detection = Detection(
                 resource_type=detection["resource_type"],
@@ -127,7 +126,9 @@ class DetectionRepository:
                 resource_name=detection.get("resource_name"),
                 region=detection["region"],
                 confidence_score=detection["confidence_score"],
-                estimated_monthly_savings_inr=detection["estimated_monthly_savings_inr"],
+                estimated_monthly_savings_inr=detection[
+                    "estimated_monthly_savings_inr"
+                ],
                 status=DetectionStatus.PENDING,
                 meta_data=detection.get("metadata", {}),
                 created_at=now,
@@ -135,16 +136,16 @@ class DetectionRepository:
             )
             db.add(db_detection)
             db_detections.append(db_detection)
-        
+
         # Flush to get IDs
         await db.flush()
-        
+
         # Refresh to load generated fields
         for db_detection in db_detections:
             await db.refresh(db_detection)
-        
+
         logger.info("Saved detections to database", count=len(db_detections))
-        
+
         return db_detections
 
     async def update(
@@ -154,11 +155,11 @@ class DetectionRepository:
     ) -> Detection:
         """
         Update detection
-        
+
         Args:
             db: Database session
             detection: Detection object to update
-            
+
         Returns:
             Updated Detection object
         """
@@ -173,11 +174,11 @@ class DetectionRepository:
     ) -> bool:
         """
         Delete detection by ID
-        
+
         Args:
             db: Database session
             detection_id: Detection ID
-            
+
         Returns:
             True if deleted, False if not found
         """
@@ -195,19 +196,22 @@ class DetectionRepository:
     ) -> int:
         """
         Count detections by status
-        
+
         Args:
             db: Database session
             status: Detection status
-            
+
         Returns:
             Count of detections
         """
-        stmt = select(func.count()).select_from(Detection).where(Detection.status == status)
+        stmt = (
+            select(func.count())
+            .select_from(Detection)
+            .where(Detection.status == status)
+        )
         result = await db.execute(stmt)
         return result.scalar_one()
 
 
 # Singleton instance
 detection_repository = DetectionRepository()
-

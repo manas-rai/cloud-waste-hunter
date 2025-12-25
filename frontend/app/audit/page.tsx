@@ -40,9 +40,9 @@ export default function AuditPage() {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/audit/?${params}`
       )
-      
+
       if (!response.ok) throw new Error('Failed to fetch audit logs')
-      
+
       const data = await response.json()
       setLogs(data.logs || [])
       setTotal(data.total || 0)
@@ -333,4 +333,3 @@ export default function AuditPage() {
     </div>
   )
 }
-

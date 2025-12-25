@@ -10,14 +10,14 @@ This layer handles HTTP concerns only:
 Business logic is delegated to the service layer.
 """
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+
+from app.core.config import settings
 from app.database import get_db
 from app.models.audit_models import RollbackRequest
 from app.services.audit_service import audit_service
-from app.core.config import settings
-import structlog
 
 logger = structlog.get_logger()
 
@@ -26,9 +26,9 @@ router = APIRouter()
 
 @router.get("/")
 async def list_audit_logs(
-    action_type: Optional[str] = None,
-    status: Optional[str] = None,
-    resource_id: Optional[str] = None,
+    action_type: str | None = None,
+    status: str | None = None,
+    resource_id: str | None = None,
     limit: int = 100,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
@@ -55,13 +55,13 @@ async def list_audit_logs(
             limit=limit,
             offset=offset,
         )
-        return result
     except Exception as e:
-        logger.error("List audit logs failed", error=str(e), exc_info=True)
+        logger.exception("List audit logs failed", error=str(e), exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to list audit logs: {str(e)}",
-        )
+            detail=f"Failed to list audit logs: {e!s}",
+        ) from e
+    return result
 
 
 @router.get("/{log_id}")
@@ -78,19 +78,25 @@ async def get_audit_log(
     Returns:
         Audit log details
     """
+
+    def _raise_not_found() -> None:
+        raise HTTPException(status_code=404, detail="Audit log not found")
+
     try:
         log = await audit_service.get_audit_log(db=db, log_id=log_id)
         if not log:
-            raise HTTPException(status_code=404, detail="Audit log not found")
-        return log.to_dict()
+            _raise_not_found()
+        log_dict = log.to_dict()
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Get audit log failed", log_id=log_id, error=str(e))
+        logger.exception("Get audit log failed", log_id=log_id, error=str(e))
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get audit log: {str(e)}",
-        )
+            detail=f"Failed to get audit log: {e!s}",
+        ) from e
+
+    return log_dict
 
 
 @router.get("/rollback/eligible")
@@ -108,13 +114,14 @@ async def get_rollback_eligible(
             db=db,
             retention_days=settings.ROLLBACK_RETENTION_DAYS,
         )
-        return result
     except Exception as e:
-        logger.error("Get rollback eligible failed", error=str(e), exc_info=True)
+        logger.exception("Get rollback eligible failed", error=str(e), exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get rollback eligible actions: {str(e)}",
-        )
+            detail=f"Failed to get rollback eligible actions: {e!s}",
+        ) from e
+
+    return result
 
 
 @router.post("/{log_id}/rollback")
@@ -139,13 +146,12 @@ async def rollback_action(
             log_id=log_id,
             rolled_back_by=request.rolled_back_by,
         )
-        return result
     except ValueError as e:
         # Business logic errors (not found, cannot rollback, etc.)
         status_code = 404 if "not found" in str(e).lower() else 400
-        raise HTTPException(status_code=status_code, detail=str(e))
+        raise HTTPException(status_code=status_code, detail=str(e)) from e
     except Exception as e:
-        logger.error(
+        logger.exception(
             "Rollback action failed",
             log_id=log_id,
             error=str(e),
@@ -153,5 +159,7 @@ async def rollback_action(
         )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to rollback action: {str(e)}",
-        )
+            detail=f"Failed to rollback action: {e!s}",
+        ) from e
+
+    return result

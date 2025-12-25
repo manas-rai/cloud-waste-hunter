@@ -3,11 +3,11 @@ Safe Execution Layer
 Executes actions with approval workflow and audit logging
 """
 
-from typing import Dict, Optional
-from datetime import datetime
-from app.aws.client import AWSClientFactory
-from app.core.config import settings
+from datetime import UTC, datetime
+
 import structlog
+
+from app.aws.client import AWSClientFactory
 
 logger = structlog.get_logger()
 
@@ -21,7 +21,7 @@ class SafeExecutor:
 
     def stop_ec2_instance(
         self, instance_id: str, approved_by: str, dry_run: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         Stop an EC2 instance
 
@@ -61,28 +61,31 @@ class SafeExecutor:
                     "previous_state": previous_state,
                     "current_state": current_state,
                     "approved_by": approved_by,
-                    "executed_at": datetime.utcnow().isoformat(),
+                    "executed_at": datetime.now(UTC).isoformat(),
                     "message": f"Instance stopped successfully (was {previous_state})",
                 }
 
             logger.info("EC2 stop executed", instance_id=instance_id, dry_run=dry_run)
-            return result
 
         except Exception as e:
             error_msg = str(e)
-            logger.error("EC2 stop failed", instance_id=instance_id, error=error_msg)
+            logger.exception(
+                "EC2 stop failed", instance_id=instance_id, error=error_msg
+            )
 
             return {
                 "success": False,
                 "action": "stop_ec2_instance",
                 "resource_id": instance_id,
                 "error": error_msg,
-                "executed_at": datetime.utcnow().isoformat(),
+                "executed_at": datetime.now(UTC).isoformat(),
             }
+        else:
+            return result
 
     def delete_ebs_volume(
         self, volume_id: str, approved_by: str, dry_run: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         Delete an EBS volume
 
@@ -115,7 +118,7 @@ class SafeExecutor:
                     "resource_id": volume_id,
                     "dry_run": False,
                     "approved_by": approved_by,
-                    "executed_at": datetime.utcnow().isoformat(),
+                    "executed_at": datetime.now(UTC).isoformat(),
                     "message": "Volume deleted successfully",
                     "warning": "This action is PERMANENT and cannot be undone",
                 }
@@ -123,11 +126,10 @@ class SafeExecutor:
             logger.info(
                 "EBS volume delete executed", volume_id=volume_id, dry_run=dry_run
             )
-            return result
 
         except Exception as e:
             error_msg = str(e)
-            logger.error(
+            logger.exception(
                 "EBS volume delete failed", volume_id=volume_id, error=error_msg
             )
 
@@ -136,12 +138,14 @@ class SafeExecutor:
                 "action": "delete_ebs_volume",
                 "resource_id": volume_id,
                 "error": error_msg,
-                "executed_at": datetime.utcnow().isoformat(),
+                "executed_at": datetime.now(UTC).isoformat(),
             }
+        else:
+            return result
 
     def delete_snapshot(
         self, snapshot_id: str, approved_by: str, dry_run: bool = False
-    ) -> Dict:
+    ) -> dict:
         """
         Delete an EBS snapshot
 
@@ -174,7 +178,7 @@ class SafeExecutor:
                     "resource_id": snapshot_id,
                     "dry_run": False,
                     "approved_by": approved_by,
-                    "executed_at": datetime.utcnow().isoformat(),
+                    "executed_at": datetime.now(UTC).isoformat(),
                     "message": "Snapshot deleted successfully",
                     "warning": "This action is PERMANENT and cannot be undone",
                 }
@@ -182,11 +186,10 @@ class SafeExecutor:
             logger.info(
                 "Snapshot delete executed", snapshot_id=snapshot_id, dry_run=dry_run
             )
-            return result
 
         except Exception as e:
             error_msg = str(e)
-            logger.error(
+            logger.exception(
                 "Snapshot delete failed", snapshot_id=snapshot_id, error=error_msg
             )
 
@@ -195,5 +198,7 @@ class SafeExecutor:
                 "action": "delete_ebs_snapshot",
                 "resource_id": snapshot_id,
                 "error": error_msg,
-                "executed_at": datetime.utcnow().isoformat(),
+                "executed_at": datetime.now(UTC).isoformat(),
             }
+        else:
+            return result

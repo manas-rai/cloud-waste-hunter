@@ -10,14 +10,14 @@ This layer handles HTTP concerns only:
 Business logic is delegated to the service layer.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Body
+import structlog
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+
 from app.database import get_db
 from app.models.detection_models import DetectionPayload
-from app.services.detection_service import detection_service
 from app.services.action_service import action_service
-import structlog
+from app.services.detection_service import detection_service
 
 logger = structlog.get_logger()
 
@@ -40,24 +40,23 @@ async def scan_resources(
         Scan results with total detections and savings
     """
     try:
-        resource_types = [resource_type.value for resource_type in payload.resource_types]
         result = await detection_service.run_scan(
             db=db,
-            resource_types=resource_types,
+            resource_types=payload.resource_types,
         )
-        return result
     except Exception as e:
-        logger.error("Scan failed", error=str(e), exc_info=True)
+        logger.exception("Scan failed", error=str(e), exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Scan failed: {str(e)}",
-        )
+            detail=f"Scan failed: {e!s}",
+        ) from e
+    return result
 
 
 @router.get("/")
 async def list_detections(
-    status: Optional[str] = None,
-    resource_type: Optional[str] = None,
+    status: str | None = None,
+    resource_type: str | None = None,
     limit: int = 100,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
@@ -82,13 +81,13 @@ async def list_detections(
             limit=limit,
             offset=offset,
         )
-        return result
     except Exception as e:
-        logger.error("List detections failed", error=str(e), exc_info=True)
+        logger.exception("List detections failed", error=str(e), exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to list detections: {str(e)}",
-        )
+            detail=f"Failed to list detections: {e!s}",
+        ) from e
+    return result
 
 
 @router.get("/{detection_id}")
@@ -105,19 +104,27 @@ async def get_detection(
     Returns:
         Detection details
     """
+
+    def _raise_not_found() -> None:
+        raise HTTPException(status_code=404, detail="Detection not found")
+
     try:
-        detection = await detection_service.get_detection(db=db, detection_id=detection_id)
+        detection = await detection_service.get_detection(
+            db=db, detection_id=detection_id
+        )
         if not detection:
-            raise HTTPException(status_code=404, detail="Detection not found")
-        return detection.to_dict()
+            _raise_not_found()
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Get detection failed", detection_id=detection_id, error=str(e))
+        logger.exception(
+            "Get detection failed", detection_id=detection_id, error=str(e)
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to get detection: {str(e)}",
-        )
+            detail=f"Failed to get detection: {e!s}",
+        ) from e
+    return detection.to_dict()
 
 
 @router.post("/{detection_id}/preview")
@@ -136,12 +143,14 @@ async def preview_action(
     """
     try:
         preview = await action_service.preview_action(db=db, detection_id=detection_id)
-        return preview
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error("Preview action failed", detection_id=detection_id, error=str(e))
+        logger.exception(
+            "Preview action failed", detection_id=detection_id, error=str(e)
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to preview action: {str(e)}",
-        )
+            detail=f"Failed to preview action: {e!s}",
+        ) from e
+    return preview

@@ -8,12 +8,14 @@ This module handles all PostgreSQL-specific database operations:
 - FastAPI dependency injection
 """
 
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
-    create_async_engine,
     AsyncSession,
     async_sessionmaker,
+    create_async_engine,
 )
-from typing import AsyncGenerator
+
 from app.core.config import settings
 
 
@@ -52,14 +54,14 @@ AsyncSessionLocal = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI dependency for getting async database session with proper cleanup.
-    
+
     This ensures:
     - Session is properly created
     - Transaction is committed on success
     - Transaction is rolled back on error
     - Session is always closed (no leaks)
     - Works with FastAPI's dependency injection
-    
+
     Usage in endpoints:
         async def my_endpoint(db: AsyncSession = Depends(get_db)):
             result = await db.execute(select(Model))
@@ -78,9 +80,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def close_db():
     """
     Close database connections - for application shutdown
-    
+
     This should be called when the application is shutting down to
     properly dispose of all database connections in the pool.
     """
     await async_engine.dispose()
-

@@ -20,12 +20,12 @@
   - CPU threshold detection (<5% for 7+ days)
   - Network activity analysis
   - Confidence scoring
-  
+
 - ✅ **EBS Unattached Detector** (`app/detection/ebs_detector.py`)
   - Rule-based detection
   - 30+ days unattached threshold
   - High confidence scoring
-  
+
 - ✅ **Snapshot Detector** (`app/detection/snapshot_detector.py`)
   - Age-based detection (>90 days)
   - AMI association checking
@@ -36,12 +36,12 @@
   - Action preview with impact analysis
   - Risk identification
   - Recommendations
-  
+
 - ✅ **Safe Executor** (`app/safety/executor.py`)
   - Approval workflow
   - Error handling
   - Execution logging
-  
+
 - ✅ **Rollback Mechanism** (`app/safety/rollback.py`)
   - 7-day rollback window
   - EC2 instance restart capability
@@ -52,16 +52,16 @@
   - `detection.py` - Detection results table
   - `audit.py` - Complete audit trail table
   - `base.py` - Base classes and mixins
-  
+
 - ✅ **API Models** (`app/models/`) - Pydantic models
   - `detection_models.py` - Request/response models
   - `action_models.py` - Action operation models
   - `audit_models.py` - Audit log models
-  
+
 - ✅ **Connection Management** (`app/database/postgres/`)
   - `engine.py` - Connection pool, session factory
   - `scripts/init_db.py` - One-time database setup
-  
+
 - ✅ Proper separation: Setup (one-time) vs Runtime (continuous)
 - ✅ No session leaks - centralized session management
 
@@ -71,12 +71,12 @@
   - `GET /` - List detections with filters
   - `GET /{id}` - Get specific detection
   - `POST /{id}/preview` - Preview action
-  
+
 - ✅ **Actions API** (`/api/v1/actions/`)
   - `POST /{id}/approve` - Approve and execute
   - `POST /{id}/reject` - Reject detection
   - `POST /batch/preview` - Batch preview
-  
+
 - ✅ **Audit API** (`/api/v1/audit/`)
   - `GET /` - List audit logs
   - `GET /{id}` - Get specific log
@@ -89,13 +89,13 @@
   - Stats overview (total detections, savings, pending)
   - Quick actions
   - Scan trigger
-  
+
 - ✅ **Detections Page** (`app/detections/page.tsx`)
   - Filterable detection list
   - Status indicators
   - Resource type labels
   - Savings display
-  
+
 - ✅ **Action Center** (`app/actions/[id]/page.tsx`)
   - Detection details
   - Action preview
@@ -173,11 +173,11 @@
    - `models/` = Pydantic (API validation)
    - `schemas/` = SQLAlchemy (Database tables)
    - `database/` = Connection management
-   
+
 2. **One-Time Setup vs Runtime**:
    - Setup script: Run once when cloning repo
    - Application: Just starts, no table creation on startup
-   
+
 3. **Layered Architecture**:
    - API Layer → Service Layer → Repository Layer → Database
    - Each layer has single responsibility
@@ -431,12 +431,12 @@ CORS_ORIGINS=http://localhost:3000  # Frontend URL
 - ✅ **Separated Setup from Runtime**
   - Database initialization is one-time script (not on app startup)
   - Application only manages connections, not schema
-  
+
 - ✅ **Clean Separation of Concerns**
   - `models/` = Pydantic (API validation)
   - `schemas/` = SQLAlchemy (Database tables)
   - `database/` = Connection management
-  
+
 - ✅ **No Session Leaks**
   - Centralized session management via `get_db()`
   - Automatic commit/rollback handling
@@ -473,4 +473,3 @@ All core features from the MVP scope are implemented and working!
 - ✅ Modern web dashboard
 - ✅ Batch operations
 - ✅ Clean architecture (maintainable & testable)
-

@@ -12,4 +12,3 @@ Services handle:
 - Cross-cutting concerns
 - Reusable workflows
 """
-

@@ -30,7 +30,7 @@ export default function ActionPage() {
   const params = useParams()
   const router = useRouter()
   const detectionId = params.id as string
-  
+
   const [detection, setDetection] = useState<Detection | null>(null)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,7 +43,7 @@ export default function ActionPage() {
       .then(data => {
         setDetection(data)
         setLoading(false)
-        
+
         // Fetch preview
         return fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/detections/${detectionId}/preview`, {
           method: 'POST',
@@ -59,7 +59,7 @@ export default function ActionPage() {
 
   const handleApprove = async (dryRun: boolean = false) => {
     if (!detection) return
-    
+
     setApproving(true)
     try {
       const response = await fetch(
@@ -73,7 +73,7 @@ export default function ActionPage() {
           }),
         }
       )
-      
+
       const result = await response.json()
       if (result.status === 'success') {
         alert(dryRun ? 'Dry run successful!' : 'Action executed successfully!')
@@ -90,7 +90,7 @@ export default function ActionPage() {
 
   const handleReject = async () => {
     if (!detection) return
-    
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/${detectionId}/reject?approved_by=user@example.com`,
@@ -98,7 +98,7 @@ export default function ActionPage() {
           method: 'POST',
         }
       )
-      
+
       if (response.ok) {
         alert('Detection rejected')
         router.push('/detections')
@@ -173,7 +173,7 @@ export default function ActionPage() {
         {preview && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Action Preview</h2>
-            
+
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Impact</h3>
               <div className="bg-gray-50 rounded p-4">
@@ -240,4 +240,3 @@ export default function ActionPage() {
     </div>
   )
 }
-

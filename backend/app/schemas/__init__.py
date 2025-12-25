@@ -9,31 +9,28 @@ This package contains ONLY SQLAlchemy ORM models representing database tables:
 Database engine and session management is in app.database.postgres
 """
 
+from app.schemas.audit import (
+    ActionType,
+    AuditLog,
+    AuditStatus,
+)
 from app.schemas.base import (
     Base,
     TimestampMixin,
 )
 from app.schemas.detection import (
     Detection,
-    ResourceType,
     DetectionStatus,
-)
-from app.schemas.audit import (
-    AuditLog,
-    AuditStatus,
-    ActionType,
+    ResourceType,
 )
 
 __all__ = [
-    # Base
-    "Base",
-    "TimestampMixin",
-    # Detection
-    "Detection",
-    "ResourceType",
-    "DetectionStatus",
-    # Audit
+    "ActionType",
     "AuditLog",
     "AuditStatus",
-    "ActionType",
+    "Base",
+    "Detection",
+    "DetectionStatus",
+    "ResourceType",
+    "TimestampMixin",
 ]

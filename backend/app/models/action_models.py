@@ -7,42 +7,56 @@ Pydantic models for action-related API endpoints:
 - Action execution
 """
 
+from typing import Any, ClassVar
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 
 
 class ApprovalRequest(BaseModel):
     """Request model for approving a detection"""
 
-    approved_by: str = Field(..., description="Email or ID of user approving the action")
-    dry_run: bool = Field(default=False, description="If True, simulate the action without executing")
+    approved_by: str = Field(
+        ..., description="Email or ID of user approving the action"
+    )
+    dry_run: bool = Field(
+        default=False, description="If True, simulate the action without executing"
+    )
 
 
 class BatchApprovalRequest(BaseModel):
     """Request model for batch approval"""
 
-    detection_ids: List[int] = Field(..., description="List of detection IDs to approve")
-    approved_by: str = Field(..., description="Email or ID of user approving the actions")
-    dry_run: bool = Field(default=False, description="If True, simulate actions without executing")
+    detection_ids: list[int] = Field(
+        ..., description="List of detection IDs to approve"
+    )
+    approved_by: str = Field(
+        ..., description="Email or ID of user approving the actions"
+    )
+    dry_run: bool = Field(
+        default=False, description="If True, simulate actions without executing"
+    )
 
 
 class BatchRejectRequest(BaseModel):
     """Request model for batch rejection"""
 
-    detection_ids: List[int] = Field(..., description="List of detection IDs to reject")
-    approved_by: str = Field(default="user@example.com", description="Email or ID of user rejecting")
+    detection_ids: list[int] = Field(..., description="List of detection IDs to reject")
+    approved_by: str = Field(
+        default="user@example.com", description="Email or ID of user rejecting"
+    )
 
 
 class ApprovalResponse(BaseModel):
     """Response model for approval/execution"""
 
-    detection: Dict[str, Any] = Field(..., description="Updated detection object")
-    action_result: Dict[str, Any] = Field(..., description="Result of the action execution")
-    audit_log: Dict[str, Any] = Field(..., description="Created audit log entry")
+    detection: dict[str, Any] = Field(..., description="Updated detection object")
+    action_result: dict[str, Any] = Field(
+        ..., description="Result of the action execution"
+    )
+    audit_log: dict[str, Any] = Field(..., description="Created audit log entry")
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "detection": {
                     "id": 1,
@@ -67,9 +81,9 @@ class BatchOperationResult(BaseModel):
 
     detection_id: int
     success: bool
-    result: Optional[Dict[str, Any]] = None
-    detection: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    result: dict[str, Any] | None = None
+    detection: dict[str, Any] | None = None
+    error: str | None = None
 
 
 class BatchOperationResponse(BaseModel):
@@ -78,10 +92,12 @@ class BatchOperationResponse(BaseModel):
     total: int = Field(..., description="Total number of operations")
     success: int = Field(..., description="Number of successful operations")
     failed: int = Field(..., description="Number of failed operations")
-    results: List[BatchOperationResult] = Field(..., description="Individual operation results")
+    results: list[BatchOperationResult] = Field(
+        ..., description="Individual operation results"
+    )
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "total": 5,
                 "success": 4,
@@ -100,4 +116,3 @@ class BatchOperationResponse(BaseModel):
                 ],
             }
         }
-

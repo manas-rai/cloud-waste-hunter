@@ -9,43 +9,40 @@ This package contains all Pydantic models used for:
 
 from app.models.action_models import (
     ApprovalRequest,
-    BatchApprovalRequest,
-    BatchRejectRequest,
     ApprovalResponse,
-    BatchOperationResult,
+    BatchApprovalRequest,
     BatchOperationResponse,
-)
-from app.models.detection_models import (
-    DetectionPayload,
-    DetectionResponse,
-    DetectionListResponse,
-    ScanResponse,
-    DetectionDetailResponse,
+    BatchOperationResult,
+    BatchRejectRequest,
 )
 from app.models.audit_models import (
-    RollbackRequest,
     AuditLogResponse,
     AuditLogsResponse,
+    RollbackRequest,
     RollbackResponse,
+)
+from app.models.detection_models import (
+    DetectionDetailResponse,
+    DetectionListResponse,
+    DetectionPayload,
+    DetectionResponse,
+    ScanResponse,
 )
 
 __all__ = [
-    # Action models
     "ApprovalRequest",
-    "BatchApprovalRequest",
-    "BatchRejectRequest",
     "ApprovalResponse",
-    "BatchOperationResult",
-    "BatchOperationResponse",
-    # Detection models
-    "DetectionPayload",
-    "DetectionResponse",
-    "DetectionListResponse",
-    "ScanResponse",
-    "DetectionDetailResponse",
-    # Audit models
-    "RollbackRequest",
     "AuditLogResponse",
     "AuditLogsResponse",
+    "BatchApprovalRequest",
+    "BatchOperationResponse",
+    "BatchOperationResult",
+    "BatchRejectRequest",
+    "DetectionDetailResponse",
+    "DetectionListResponse",
+    "DetectionPayload",
+    "DetectionResponse",
+    "RollbackRequest",
     "RollbackResponse",
+    "ScanResponse",
 ]

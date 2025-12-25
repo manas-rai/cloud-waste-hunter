@@ -3,18 +3,20 @@ Cloud Waste Hunter - Main FastAPI Application
 """
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
+
 from app.api.v1 import api_router
+from app.core.config import settings
 from app.database import close_db
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """
     Application lifespan manager.
-    
+
     Startup: Nothing needed (tables already exist from one-time setup)
     Shutdown: Close database connection pool
     """

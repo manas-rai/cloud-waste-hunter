@@ -3,7 +3,8 @@ API v1 Router
 """
 
 from fastapi import APIRouter
-from app.api.v1 import detections, actions, audit
+
+from app.api.v1 import actions, audit, detections
 
 api_router = APIRouter()
 

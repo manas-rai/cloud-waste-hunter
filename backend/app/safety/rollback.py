@@ -2,11 +2,12 @@
 Rollback Mechanism for Executed Actions
 """
 
-from typing import Dict, Optional
-from datetime import datetime, timedelta
+from datetime import UTC, datetime
+
+import structlog
+
 from app.aws.client import AWSClientFactory
 from app.core.config import settings
-import structlog
 
 logger = structlog.get_logger()
 
@@ -19,7 +20,7 @@ class RollbackExecutor:
         self.ec2_client = client_factory.get_ec2_client()
         self.retention_days = settings.ROLLBACK_RETENTION_DAYS
 
-    def can_rollback(self, audit_log: Dict) -> bool:
+    def can_rollback(self, audit_log: dict) -> bool:
         """
         Check if an action can be rolled back
 
@@ -43,7 +44,7 @@ class RollbackExecutor:
             executed_at = datetime.fromisoformat(executed_at.replace("Z", "+00:00"))
 
         if executed_at:
-            age = datetime.utcnow() - executed_at.replace(tzinfo=None)
+            age = datetime.now(UTC) - executed_at.replace(tzinfo=None)
             if age.days > self.retention_days:
                 return False
 
@@ -52,12 +53,9 @@ class RollbackExecutor:
             return False
 
         # Check if it was a dry run
-        if audit_log.get("dry_run"):
-            return False
+        return not audit_log.get("dry_run")
 
-        return True
-
-    def rollback_ec2_stop(self, instance_id: str, rolled_back_by: str) -> Dict:
+    def rollback_ec2_stop(self, instance_id: str, rolled_back_by: str) -> dict:
         """
         Rollback EC2 stop action by starting the instance
 
@@ -82,16 +80,15 @@ class RollbackExecutor:
                 "previous_state": previous_state,
                 "current_state": current_state,
                 "rolled_back_by": rolled_back_by,
-                "rolled_back_at": datetime.utcnow().isoformat(),
+                "rolled_back_at": datetime.now(UTC).isoformat(),
                 "message": f"Instance started successfully (was {previous_state})",
             }
 
             logger.info("EC2 rollback executed", instance_id=instance_id)
-            return result
 
         except Exception as e:
             error_msg = str(e)
-            logger.error(
+            logger.exception(
                 "EC2 rollback failed", instance_id=instance_id, error=error_msg
             )
 
@@ -100,10 +97,12 @@ class RollbackExecutor:
                 "action": "rollback_ec2_stop",
                 "resource_id": instance_id,
                 "error": error_msg,
-                "rolled_back_at": datetime.utcnow().isoformat(),
+                "rolled_back_at": datetime.now(UTC).isoformat(),
             }
+        else:
+            return result
 
-    def rollback_action(self, audit_log: Dict, rolled_back_by: str) -> Dict:
+    def rollback_action(self, audit_log: dict, rolled_back_by: str) -> dict:
         """
         Rollback an action based on audit log
 

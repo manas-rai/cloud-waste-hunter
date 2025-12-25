@@ -4,7 +4,7 @@ AWS Client Factory and Session Management
 
 import boto3
 from botocore.config import Config
-from typing import Optional
+
 from app.core.config import settings
 
 
@@ -13,10 +13,10 @@ class AWSClientFactory:
 
     def __init__(
         self,
-        region_name: Optional[str] = None,
-        access_key_id: Optional[str] = None,
-        secret_access_key: Optional[str] = None,
-        session_token: Optional[str] = None,
+        region_name: str | None = None,
+        access_key_id: str | None = None,
+        secret_access_key: str | None = None,
+        session_token: str | None = None,
     ):
         """
         Initialize AWS client factory

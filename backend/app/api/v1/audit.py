@@ -162,5 +162,5 @@ async def rollback_action(
             status_code=500,
             detail=f"Failed to rollback action: {e!s}",
         ) from e
-    else:
-        return result
+
+    return result

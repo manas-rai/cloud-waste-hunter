@@ -50,8 +50,7 @@ async def scan_resources(
             status_code=500,
             detail=f"Scan failed: {e!s}",
         ) from e
-    else:
-        return result
+    return result
 
 
 @router.get("/")
@@ -88,8 +87,7 @@ async def list_detections(
             status_code=500,
             detail=f"Failed to list detections: {e!s}",
         ) from e
-    else:
-        return result
+    return result
 
 
 @router.get("/{detection_id}")
@@ -126,8 +124,7 @@ async def get_detection(
             status_code=500,
             detail=f"Failed to get detection: {e!s}",
         ) from e
-    else:
-        return detection.to_dict()
+    return detection.to_dict()
 
 
 @router.post("/{detection_id}/preview")
@@ -156,5 +153,4 @@ async def preview_action(
             status_code=500,
             detail=f"Failed to preview action: {e!s}",
         ) from e
-    else:
-        return preview
+    return preview

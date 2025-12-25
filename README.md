@@ -77,7 +77,7 @@ Before you begin, ensure you have the following installed:
   # macOS (Homebrew)
   brew install postgresql@18
   brew services start postgresql@18
-  
+
   # Verify
   psql --version
   ```

@@ -179,7 +179,7 @@ export default function ActionsPage() {
         `Failed: ${result.failed}\n` +
         `Total: ${result.total}`
       )
-      
+
       setSelectedIds([])
       fetchDetections(statusFilter)
     } catch (error: any) {
@@ -227,7 +227,7 @@ export default function ActionsPage() {
         `Failed: ${result.failed}\n` +
         `Total: ${result.total}`
       )
-      
+
       setSelectedIds([])
       fetchDetections(statusFilter)
     } catch (error: any) {
@@ -570,4 +570,3 @@ export default function ActionsPage() {
     </div>
   )
 }
-

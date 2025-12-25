@@ -38,4 +38,4 @@ fix-all:
 
 pre-commit:
 	@echo "Running pre-commit on all files..."
-	pre-commit run --all-files
+	cd backend && uv run pre-commit run --all-files

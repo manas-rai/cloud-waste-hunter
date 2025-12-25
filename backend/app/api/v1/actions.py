@@ -64,8 +64,8 @@ async def preview_batch_actions(
             status_code=500,
             detail=f"Failed to preview batch actions: {e!s}",
         ) from e
-    else:
-        return preview
+
+    return preview
 
 
 @router.post("/batch/approve")
@@ -246,8 +246,8 @@ async def approve_detection(
             status_code=500,
             detail=f"Failed to approve detection: {e!s}",
         ) from e
-    else:
-        return result
+
+    return result
 
 
 @router.post("/{detection_id}/reject")
@@ -286,5 +286,5 @@ async def reject_detection(
             status_code=500,
             detail=f"Failed to reject detection: {e!s}",
         ) from e
-    else:
-        return detection_dict
+
+    return detection_dict

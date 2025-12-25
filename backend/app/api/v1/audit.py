@@ -61,8 +61,7 @@ async def list_audit_logs(
             status_code=500,
             detail=f"Failed to list audit logs: {e!s}",
         ) from e
-    else:
-        return result
+    return result
 
 
 @router.get("/{log_id}")
@@ -96,8 +95,8 @@ async def get_audit_log(
             status_code=500,
             detail=f"Failed to get audit log: {e!s}",
         ) from e
-    else:
-        return log_dict
+
+    return log_dict
 
 
 @router.get("/rollback/eligible")
@@ -121,8 +120,8 @@ async def get_rollback_eligible(
             status_code=500,
             detail=f"Failed to get rollback eligible actions: {e!s}",
         ) from e
-    else:
-        return result
+
+    return result
 
 
 @router.post("/{log_id}/rollback")

@@ -7,22 +7,24 @@ Pydantic models for audit-related API endpoints:
 - Audit log details
 """
 
+from typing import Any, ClassVar
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 
 
 class RollbackRequest(BaseModel):
     """Request model for rolling back an action"""
 
-    rolled_back_by: str = Field(..., description="Email or ID of user performing the rollback")
+    rolled_back_by: str = Field(
+        ..., description="Email or ID of user performing the rollback"
+    )
 
 
 class AuditLogResponse(BaseModel):
     """Response model for a single audit log"""
 
     id: int
-    detection_id: Optional[int]
+    detection_id: int | None
     action_type: str
     resource_type: str
     resource_id: str
@@ -31,15 +33,15 @@ class AuditLogResponse(BaseModel):
     executed_at: str
     dry_run: bool
     can_rollback: bool
-    rolled_back_at: Optional[str]
-    rolled_back_by: Optional[str]
-    error_message: Optional[str]
-    meta_data: Dict[str, Any]
+    rolled_back_at: str | None
+    rolled_back_by: str | None
+    error_message: str | None
+    meta_data: dict[str, Any]
     created_at: str
     updated_at: str
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "id": 1,
                 "detection_id": 10,
@@ -67,13 +69,13 @@ class AuditLogResponse(BaseModel):
 class AuditLogsResponse(BaseModel):
     """Response model for audit logs list"""
 
-    logs: List[AuditLogResponse]
+    logs: list[AuditLogResponse]
     total: int
     limit: int
     offset: int
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "logs": [],
                 "total": 100,
@@ -88,10 +90,10 @@ class RollbackResponse(BaseModel):
 
     message: str
     audit_log: AuditLogResponse
-    rollback_action: Dict[str, Any]
+    rollback_action: dict[str, Any]
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "message": "Rollback successful",
                 "audit_log": {},
@@ -102,4 +104,3 @@ class RollbackResponse(BaseModel):
                 },
             }
         }
-

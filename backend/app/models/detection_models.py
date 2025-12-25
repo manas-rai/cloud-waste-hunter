@@ -7,16 +7,17 @@ Pydantic models for detection-related API endpoints:
 - Detection details
 """
 
+from typing import Any, ClassVar
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-from app.schemas.detection import ResourceType, DetectionStatus
+
+from app.schemas.detection import ResourceType
 
 
 class DetectionPayload(BaseModel):
     """Request payload for scanning resources"""
 
-    resource_types: List[ResourceType] = Field(
+    resource_types: list[ResourceType] = Field(
         default_factory=lambda: [
             ResourceType.EC2_INSTANCE,
             ResourceType.EBS_VOLUME,
@@ -26,7 +27,7 @@ class DetectionPayload(BaseModel):
     )
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "resource_types": ["ec2_instance", "ebs_volume"],
             }
@@ -39,19 +40,19 @@ class DetectionResponse(BaseModel):
     id: int
     resource_type: str
     resource_id: str
-    resource_name: Optional[str]
+    resource_name: str | None
     region: str
     confidence_score: float
     estimated_monthly_savings_inr: float
     status: str
-    approved_by: Optional[str]
-    approved_at: Optional[str]
-    metadata: Dict[str, Any]
+    approved_by: str | None
+    approved_at: str | None
+    metadata: dict[str, Any]
     created_at: str
     updated_at: str
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "id": 1,
                 "resource_type": "ec2_instance",
@@ -76,12 +77,12 @@ class DetectionResponse(BaseModel):
 class DetectionListResponse(BaseModel):
     """Response model for detection list"""
 
-    detections: List[DetectionResponse]
+    detections: list[DetectionResponse]
     total: int
     filtered: int
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "detections": [],
                 "total": 50,
@@ -96,11 +97,11 @@ class ScanResponse(BaseModel):
     message: str
     total_detections: int
     total_monthly_savings_inr: float
-    detections_by_type: Dict[str, int]
+    detections_by_type: dict[str, int]
     scan_duration_seconds: float
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "message": "Scan completed successfully",
                 "total_detections": 15,
@@ -119,10 +120,10 @@ class DetectionDetailResponse(BaseModel):
     """Response model for detection detail with preview"""
 
     detection: DetectionResponse
-    action_preview: Dict[str, Any]
+    action_preview: dict[str, Any]
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "detection": {},
                 "action_preview": {
@@ -134,4 +135,3 @@ class DetectionDetailResponse(BaseModel):
                 },
             }
         }
-

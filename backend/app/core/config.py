@@ -3,7 +3,6 @@ Application Configuration
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
 
 
 class Settings(BaseSettings):
@@ -24,10 +23,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
 
     @property
-    def cors_origins_list(self) -> List[str]:
+    def cors_origins_list(self) -> list[str]:
         """Parse CORS_ORIGINS from comma-separated string to list"""
         if isinstance(self.CORS_ORIGINS, str):
-            return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+            return [
+                origin.strip()
+                for origin in self.CORS_ORIGINS.split(",")
+                if origin.strip()
+            ]
         return self.CORS_ORIGINS if isinstance(self.CORS_ORIGINS, list) else []
 
     # Database

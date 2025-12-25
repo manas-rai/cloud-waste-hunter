@@ -2,13 +2,17 @@
 EC2 Idle Instance Detection using ML (Isolation Forest)
 """
 
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import UTC, datetime
+
 import numpy as np
 import pandas as pd
+import structlog
 from sklearn.ensemble import IsolationForest
+
 from app.aws.resources import EC2ResourceCollector
 from app.core.config import settings
+
+logger = structlog.get_logger()
 
 
 class EC2IdleDetector:
@@ -32,7 +36,7 @@ class EC2IdleDetector:
         )
         self.is_trained = False
 
-    def _extract_features(self, metrics: List[Dict]) -> Optional[np.ndarray]:
+    def _extract_features(self, metrics: list[dict]) -> np.ndarray | None:
         """
         Extract features from CloudWatch metrics
 
@@ -45,16 +49,13 @@ class EC2IdleDetector:
         - Network out average
         - Number of data points
         """
-        # if not metrics or len(metrics) < 24:  # Need at least 24 hours of data
-        #     return None
-
-        df = pd.DataFrame(metrics)
+        metrics_df = pd.DataFrame(metrics)
 
         # CPU features
-        cpu_avg = df["Average"].mean() if "Average" in df.columns else 0
-        cpu_max = df["Maximum"].max() if "Maximum" in df.columns else 0
-        cpu_min = df["Minimum"].min() if "Minimum" in df.columns else 0
-        cpu_std = df["Average"].std() if "Average" in df.columns else 0
+        cpu_avg = metrics_df["Average"].mean() if "Average" in metrics_df.columns else 0
+        cpu_max = metrics_df["Maximum"].max() if "Maximum" in metrics_df.columns else 0
+        cpu_min = metrics_df["Minimum"].min() if "Minimum" in metrics_df.columns else 0
+        cpu_std = metrics_df["Average"].std() if "Average" in metrics_df.columns else 0
 
         # Network features (if available)
         # Note: Network metrics would need separate API calls
@@ -86,9 +87,7 @@ class EC2IdleDetector:
         self.model.fit(feature_matrix)
         self.is_trained = True
 
-    def detect_idle_instances(
-        self, instances: Optional[List[Dict]] = None
-    ) -> List[Dict]:
+    def detect_idle_instances(self, instances: list[dict] | None = None) -> list[dict]:
         """
         Detect idle EC2 instances
 
@@ -137,28 +136,34 @@ class EC2IdleDetector:
 
         # Convert to numpy array
         feature_matrix = np.array(all_features)
-        print(f"Feature matrix shape: {feature_matrix.shape}")
-        print(f"Number of instances to analyze: {len(feature_matrix)}")
+        logger.info(
+            "Feature matrix prepared",
+            shape=feature_matrix.shape,
+            num_instances=len(feature_matrix),
+        )
 
         # Determine detection mode based on data availability
         use_ml = len(feature_matrix) >= 5
-        
+
         if use_ml:
             # ML-powered detection: Train model with sufficient data
-            print("Using ML-powered detection (5+ instances)")
+            logger.info("Using ML-powered detection", min_instances=5)
             self._train_model(feature_matrix)
             predictions = self.model.predict(feature_matrix)
             anomaly_scores = self.model.score_samples(feature_matrix)
         else:
             # Rule-based detection: Insufficient data for ML
-            print(f"Using rule-based detection ({len(feature_matrix)} instances - need 5+ for ML)")
+            logger.info(
+                "Using rule-based detection",
+                instances=len(feature_matrix),
+                min_required=5,
+            )
             predictions = None
             anomaly_scores = None
 
         # Process results
         for idx, (instance_id, data) in enumerate(instance_features_map.items()):
             instance = data["instance"]
-            metrics = data["metrics"]
             features = data["features"]
 
             # Calculate average CPU
@@ -172,15 +177,17 @@ class EC2IdleDetector:
                 # ML-powered detection
                 is_anomaly = predictions[idx] == -1
                 confidence = 1.0 - (anomaly_scores[idx] + 1) / 2  # Normalize to 0-1
-                
+
                 # Only flag if both threshold and ML agree (or high confidence)
                 if not (is_anomaly or confidence > 0.7):
                     continue
             else:
                 # Rule-based detection: Use threshold only
                 is_anomaly = False
-                confidence = 0.8 if avg_cpu < self.cpu_threshold / 2 else 0.6  # Higher confidence for very low CPU
-                
+                confidence = (
+                    0.8 if avg_cpu < self.cpu_threshold / 2 else 0.6
+                )  # Higher confidence for very low CPU
+
                 # Already passed threshold check above, so flag it
             # Calculate estimated savings
             savings = self._estimate_savings(instance, avg_cpu)
@@ -189,9 +196,7 @@ class EC2IdleDetector:
                 {
                     "resource_type": "ec2_instance",
                     "resource_id": instance_id,
-                    "resource_name": instance.get("tags", {}).get(
-                        "Name", instance_id
-                    ),
+                    "resource_name": instance.get("tags", {}).get("Name", instance_id),
                     "region": instance["region"],
                     "instance_type": instance["instance_type"],
                     "state": instance["state"],
@@ -201,7 +206,7 @@ class EC2IdleDetector:
                     "is_ml_detected": is_anomaly,
                     "detection_mode": "ml" if use_ml else "rule-based",
                     "estimated_monthly_savings_inr": savings,
-                    "detected_at": datetime.utcnow().isoformat(),
+                    "detected_at": datetime.now(UTC).isoformat(),
                     "metadata": {
                         "launch_time": (
                             instance["launch_time"].isoformat()
@@ -218,7 +223,7 @@ class EC2IdleDetector:
 
         return detections
 
-    def _estimate_savings(self, instance: Dict, avg_cpu: float) -> float:
+    def _estimate_savings(self, instance: dict, _avg_cpu: float) -> float:
         """
         Estimate monthly savings in INR for stopping this instance
 

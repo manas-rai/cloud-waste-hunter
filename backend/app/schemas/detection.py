@@ -2,9 +2,11 @@
 Detection Database Schema (SQLAlchemy Model)
 """
 
-from sqlalchemy import Column, String, Float, Integer, JSON, Enum, DateTime
-from app.schemas.base import Base, TimestampMixin
 import enum
+
+from sqlalchemy import JSON, Column, DateTime, Enum, Float, Integer, String
+
+from app.schemas.base import Base, TimestampMixin
 
 
 class ResourceType(str, enum.Enum):

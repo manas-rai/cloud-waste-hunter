@@ -2,8 +2,8 @@
 EBS Snapshot Detection (Old Snapshots)
 """
 
-from typing import List, Dict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
 from app.aws.resources import SnapshotCollector
 from app.core.config import settings
 
@@ -22,7 +22,7 @@ class SnapshotDetector:
         self.collector = resource_collector
         self.snapshot_age_days = settings.SNAPSHOT_AGE_DAYS
 
-    def detect_old_snapshots(self, snapshots: List[Dict] = None) -> List[Dict]:
+    def detect_old_snapshots(self, snapshots: list[dict] | None = None) -> list[dict]:
         """
         Detect old snapshots without associated AMIs
 
@@ -36,7 +36,7 @@ class SnapshotDetector:
             snapshots = self.collector.get_all_snapshots()
 
         detections = []
-        cutoff_date = datetime.utcnow() - timedelta(days=self.snapshot_age_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=self.snapshot_age_days)
 
         for snapshot in snapshots:
             # Skip if not completed
@@ -59,7 +59,7 @@ class SnapshotDetector:
                 continue  # Has associated AMI, skip
 
             # Calculate age
-            age_days = (datetime.utcnow() - start_time.replace(tzinfo=None)).days
+            age_days = (datetime.now(UTC) - start_time.replace(tzinfo=None)).days
 
             # Calculate confidence score based on retention patterns
             confidence = self._calculate_confidence(snapshot, age_days)
@@ -84,7 +84,7 @@ class SnapshotDetector:
                     ),
                     "confidence_score": confidence,
                     "estimated_monthly_savings_inr": savings,
-                    "detected_at": datetime.utcnow().isoformat(),
+                    "detected_at": datetime.now(UTC).isoformat(),
                     "metadata": {
                         "volume_id": snapshot.get("volume_id"),
                         "description": snapshot.get("description", ""),
@@ -97,7 +97,7 @@ class SnapshotDetector:
 
         return detections
 
-    def _calculate_confidence(self, snapshot: Dict, age_days: int) -> float:
+    def _calculate_confidence(self, snapshot: dict, age_days: int) -> float:
         """
         Calculate confidence score for deletion
 
@@ -131,7 +131,7 @@ class SnapshotDetector:
 
         return min(confidence, 0.95)  # Cap at 0.95
 
-    def _estimate_savings(self, snapshot: Dict) -> float:
+    def _estimate_savings(self, snapshot: dict) -> float:
         """
         Estimate monthly savings in INR for deleting this snapshot
 

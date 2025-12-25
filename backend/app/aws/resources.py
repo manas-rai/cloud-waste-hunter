@@ -2,10 +2,13 @@
 AWS Resource Discovery and Data Collection
 """
 
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
+import structlog
+
 from app.aws.client import AWSClientFactory
-import boto3
+
+logger = structlog.get_logger()
 
 
 class EC2ResourceCollector:
@@ -15,7 +18,7 @@ class EC2ResourceCollector:
         self.ec2_client = client_factory.get_ec2_client()
         self.cloudwatch = client_factory.get_cloudwatch_client()
 
-    def get_all_instances(self) -> List[Dict]:
+    def get_all_instances(self) -> list[dict]:
         """
         Get all EC2 instances with their details
 
@@ -52,7 +55,7 @@ class EC2ResourceCollector:
 
     def get_instance_metrics(
         self, instance_id: str, days: int = 7, metric_name: str = "CPUUtilization"
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Get CloudWatch metrics for an instance
 
@@ -64,7 +67,7 @@ class EC2ResourceCollector:
         Returns:
             List of metric data points
         """
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         start_time = end_time - timedelta(days=days)
 
         try:
@@ -81,7 +84,9 @@ class EC2ResourceCollector:
             return sorted(response["Datapoints"], key=lambda x: x["Timestamp"])
         except Exception as e:
             # Log error but return empty list
-            print(f"Error fetching metrics for {instance_id}: {e}")
+            logger.warning(
+                "Error fetching metrics", instance_id=instance_id, error=str(e)
+            )
             return []
 
 
@@ -91,7 +96,7 @@ class EBSResourceCollector:
     def __init__(self, client_factory: AWSClientFactory):
         self.ec2_client = client_factory.get_ec2_client()
 
-    def get_all_volumes(self) -> List[Dict]:
+    def get_all_volumes(self) -> list[dict]:
         """
         Get all EBS volumes with their details
 
@@ -128,7 +133,7 @@ class SnapshotCollector:
     def __init__(self, client_factory: AWSClientFactory):
         self.ec2_client = client_factory.get_ec2_client()
 
-    def get_all_snapshots(self, owner_id: Optional[str] = None) -> List[Dict]:
+    def get_all_snapshots(self, owner_id: str | None = None) -> list[dict]:
         """
         Get all EBS snapshots
 
@@ -168,7 +173,7 @@ class SnapshotCollector:
 
         return snapshots
 
-    def get_associated_amis(self, snapshot_id: str) -> List[str]:
+    def get_associated_amis(self, snapshot_id: str) -> list[str]:
         """
         Check if snapshot is associated with any AMI
 
@@ -190,6 +195,10 @@ class SnapshotCollector:
                     ):
                         amis.append(image["ImageId"])
         except Exception as e:
-            print(f"Error checking AMIs for snapshot {snapshot_id}: {e}")
+            logger.warning(
+                "Error checking AMIs for snapshot",
+                snapshot_id=snapshot_id,
+                error=str(e),
+            )
 
         return amis

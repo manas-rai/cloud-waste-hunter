@@ -3,8 +3,8 @@ Dry-Run Preview System
 Simulates actions without actually executing them
 """
 
-from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import UTC, datetime
+
 from app.core.config import settings
 
 
@@ -14,7 +14,7 @@ class DryRunExecutor:
     def __init__(self):
         self.dry_run_enabled = settings.DRY_RUN_ENABLED
 
-    def preview_ec2_stop(self, instance_id: str, instance_data: Dict) -> Dict:
+    def preview_ec2_stop(self, instance_id: str, instance_data: dict) -> dict:
         """
         Preview stopping an EC2 instance
 
@@ -44,10 +44,10 @@ class DryRunExecutor:
                 "Check for any scheduled tasks",
                 "Ensure no critical services depend on this instance",
             ],
-            "previewed_at": datetime.utcnow().isoformat(),
+            "previewed_at": datetime.now(UTC).isoformat(),
         }
 
-    def preview_ebs_delete(self, volume_id: str, volume_data: Dict) -> Dict:
+    def preview_ebs_delete(self, volume_id: str, volume_data: dict) -> dict:
         """
         Preview deleting an EBS volume
 
@@ -77,10 +77,10 @@ class DryRunExecutor:
                 "Verify volume is truly unused",
                 "Check for any recent access patterns",
             ],
-            "previewed_at": datetime.utcnow().isoformat(),
+            "previewed_at": datetime.now(UTC).isoformat(),
         }
 
-    def preview_snapshot_delete(self, snapshot_id: str, snapshot_data: Dict) -> Dict:
+    def preview_snapshot_delete(self, snapshot_id: str, snapshot_data: dict) -> dict:
         """
         Preview deleting an EBS snapshot
 
@@ -110,10 +110,10 @@ class DryRunExecutor:
                 "Check if any AMIs depend on this snapshot",
                 "Consider if snapshot might be needed for compliance",
             ],
-            "previewed_at": datetime.utcnow().isoformat(),
+            "previewed_at": datetime.now(UTC).isoformat(),
         }
 
-    def preview_batch_actions(self, detections: List[Dict]) -> Dict:
+    def preview_batch_actions(self, detections: list[dict]) -> dict:
         """
         Preview a batch of actions
 
@@ -126,7 +126,7 @@ class DryRunExecutor:
         total_savings = sum(
             d.get("estimated_monthly_savings_inr", 0) for d in detections
         )
-        action_counts = {}
+        action_counts: dict[str, int] = {}
 
         previews = []
         for detection in detections:
@@ -152,5 +152,5 @@ class DryRunExecutor:
             "action_breakdown": action_counts,
             "total_estimated_savings_inr": round(total_savings, 2),
             "previews": previews,
-            "previewed_at": datetime.utcnow().isoformat(),
+            "previewed_at": datetime.now(UTC).isoformat(),
         }

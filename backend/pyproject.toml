@@ -9,31 +9,31 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.6.0",
-    
+
     # AWS SDK
     "boto3>=1.35.0",
     "botocore>=1.35.0",
-    
+
     # Database
     "sqlalchemy>=2.0.36",
     "asyncpg>=0.29.0",  # Async PostgreSQL driver
     "greenlet>=3.0.0",  # Required for async SQLAlchemy
-    
+
     # ML & Data Processing
     "scikit-learn>=1.5.0",
     "pandas>=2.2.0",
     "numpy>=1.26.4",
-    
+
     # Utilities
     "python-dotenv>=1.0.1",
     "python-multipart>=0.0.20",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
-    
+
     # HTTP Client
     "httpx>=0.28.0",
     "aiohttp>=3.11.0",
-    
+
     # Logging & Monitoring
     "structlog>=24.4.0",
 ]
@@ -144,6 +144,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # unused imports allowed in __init__.py
 "tests/**/*.py" = ["ARG", "PLR2004", "S101"]  # allow test-specific patterns
+"**/scripts/init_db.py" = ["T201"]  # print statements are fine for CLI scripts
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

@@ -16,4 +16,3 @@ Benefits:
 - Query optimization in one place
 - Can add caching, query logging, etc.
 """
-

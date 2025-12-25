@@ -2,8 +2,8 @@
 EBS Unattached Volume Detection
 """
 
-from typing import List, Dict
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
 from app.aws.resources import EBSResourceCollector
 from app.core.config import settings
 
@@ -21,7 +21,9 @@ class EBSUnattachedDetector:
         self.collector = resource_collector
         self.unattached_days = settings.EBS_UNATTACHED_DAYS
 
-    def detect_unattached_volumes(self, volumes: List[Dict] = None) -> List[Dict]:
+    def detect_unattached_volumes(
+        self, volumes: list[dict] | None = None
+    ) -> list[dict]:
         """
         Detect unattached EBS volumes
 
@@ -35,7 +37,7 @@ class EBSUnattachedDetector:
             volumes = self.collector.get_all_volumes()
 
         detections = []
-        cutoff_date = datetime.utcnow() - timedelta(days=self.unattached_days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=self.unattached_days)
 
         for volume in volumes:
             # Check if volume is available (unattached)
@@ -55,7 +57,7 @@ class EBSUnattachedDetector:
                 continue  # Too recent
 
             # Calculate age
-            age_days = (datetime.utcnow() - create_time.replace(tzinfo=None)).days
+            age_days = (datetime.now(UTC) - create_time.replace(tzinfo=None)).days
 
             # Calculate estimated savings
             savings = self._estimate_savings(volume)
@@ -79,7 +81,7 @@ class EBSUnattachedDetector:
                     ),
                     "confidence_score": 0.95,  # High confidence for rule-based detection
                     "estimated_monthly_savings_inr": savings,
-                    "detected_at": datetime.utcnow().isoformat(),
+                    "detected_at": datetime.now(UTC).isoformat(),
                     "metadata": {
                         "encrypted": volume.get("encrypted", False),
                         "tags": volume.get("tags", {}),
@@ -89,7 +91,7 @@ class EBSUnattachedDetector:
 
         return detections
 
-    def _estimate_savings(self, volume: Dict) -> float:
+    def _estimate_savings(self, volume: dict) -> float:
         """
         Estimate monthly savings in INR for deleting this volume
 

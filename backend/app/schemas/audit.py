@@ -2,9 +2,22 @@
 Audit Log Database Schema (SQLAlchemy Model)
 """
 
-from sqlalchemy import Column, String, Integer, JSON, Enum, DateTime, ForeignKey, Boolean, Text, func
-from app.schemas.base import Base, TimestampMixin
 import enum
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
+
+from app.schemas.base import Base, TimestampMixin
 
 
 class ActionType(str, enum.Enum):

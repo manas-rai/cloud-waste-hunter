@@ -31,6 +31,7 @@ export default function AuditPage() {
 
   const fetchLogs = async () => {
     setLoading(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const params = new URLSearchParams()
       if (filters.action_type) params.append('action_type', filters.action_type)
@@ -38,7 +39,7 @@ export default function AuditPage() {
       if (filters.resource_id) params.append('resource_id', filters.resource_id)
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/audit/?${params}`
+        `${apiUrl}/api/v1/audit/?${params}`
       )
 
       if (!response.ok) throw new Error('Failed to fetch audit logs')
@@ -63,9 +64,10 @@ export default function AuditPage() {
       return
     }
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/audit/${logId}/rollback`,
+        `${apiUrl}/api/v1/audit/${logId}/rollback`,
         {
           method: 'POST',
           headers: {

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from structlog import get_logger
 
 from app.api.v1 import api_router
 from app.core.config import settings
@@ -17,10 +18,25 @@ async def lifespan(_app: FastAPI):
     """
     Application lifespan manager.
 
-    Startup: Nothing needed (tables already exist from one-time setup)
+    Startup: Auto-initialize database tables if they don't exist
     Shutdown: Close database connection pool
     """
+    # Startup: Initialize database tables
+    try:
+        from app.database import async_engine
+        from app.schemas.base import Base
+
+        logger = get_logger()
+        async with async_engine.begin() as conn:
+            # Create tables if they don't exist (idempotent operation)
+            await conn.run_sync(Base.metadata.create_all)
+
+        logger.info("Database tables initialized successfully")
+    except Exception:
+        logger.exception("Database initialization error")
+
     yield
+
     # Shutdown: Close database connections
     await close_db()
 

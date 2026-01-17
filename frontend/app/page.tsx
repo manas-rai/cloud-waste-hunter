@@ -12,8 +12,9 @@ export default function Home() {
   const [scanning, setScanning] = useState(false)
 
   const fetchStats = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     // Fetch dashboard stats
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/detections/`)
+    fetch(`${apiUrl}/api/v1/detections/`)
       .then(res => res.json())
       .then(data => {
         const totalSavings = data.detections?.reduce(
@@ -39,15 +40,18 @@ export default function Home() {
 
   const runScan = async (resourceTypes?: string[]) => {
     setScanning(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/detections/scan`,
+        `${apiUrl}/api/v1/detections/scan`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: resourceTypes ? JSON.stringify({ resource_types: resourceTypes }) : undefined,
+          body: JSON.stringify(
+            resourceTypes ? { resource_types: resourceTypes } : {}
+          ),
         }
       )
 

@@ -34,6 +34,7 @@ export default function ActionsPage() {
 
   const fetchDetections = async (status?: string) => {
     setLoading(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const params = new URLSearchParams()
       if (status && status !== 'all') {
@@ -41,7 +42,7 @@ export default function ActionsPage() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/detections/?${params}`
+        `${apiUrl}/api/v1/detections/?${params}`
       )
 
       if (!response.ok) throw new Error('Failed to fetch detections')
@@ -82,9 +83,10 @@ export default function ActionsPage() {
       return
     }
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/${detectionId}/approve`,
+        `${apiUrl}/api/v1/actions/${detectionId}/approve`,
         {
           method: 'POST',
           headers: {
@@ -114,9 +116,10 @@ export default function ActionsPage() {
       return
     }
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/${detectionId}/reject`,
+        `${apiUrl}/api/v1/actions/${detectionId}/reject`,
         {
           method: 'POST',
           headers: {
@@ -151,9 +154,10 @@ export default function ActionsPage() {
     }
 
     setBatchProcessing(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/batch/approve`,
+        `${apiUrl}/api/v1/actions/batch/approve`,
         {
           method: 'POST',
           headers: {
@@ -200,9 +204,10 @@ export default function ActionsPage() {
     }
 
     setBatchProcessing(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/batch/reject`,
+        `${apiUrl}/api/v1/actions/batch/reject`,
         {
           method: 'POST',
           headers: {
@@ -332,11 +337,10 @@ export default function ActionsPage() {
                   setStatusFilter(status)
                   setSelectedIds([]) // Clear selection when changing filter
                 }}
-                className={`px-4 py-2 rounded-md font-medium transition ${
-                  statusFilter === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className={`px-4 py-2 rounded-md font-medium transition ${statusFilter === status
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
               </button>

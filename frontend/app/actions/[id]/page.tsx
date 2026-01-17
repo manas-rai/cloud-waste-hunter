@@ -37,15 +37,16 @@ export default function ActionPage() {
   const [approving, setApproving] = useState(false)
 
   useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     // Fetch detection
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/detections/${detectionId}`)
+    fetch(`${apiUrl}/api/v1/detections/${detectionId}`)
       .then(res => res.json())
       .then(data => {
         setDetection(data)
         setLoading(false)
 
         // Fetch preview
-        return fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/detections/${detectionId}/preview`, {
+        return fetch(`${apiUrl}/api/v1/detections/${detectionId}/preview`, {
           method: 'POST',
         })
       })
@@ -61,9 +62,10 @@ export default function ActionPage() {
     if (!detection) return
 
     setApproving(true)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/${detectionId}/approve`,
+        `${apiUrl}/api/v1/actions/${detectionId}/approve`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -91,9 +93,10 @@ export default function ActionPage() {
   const handleReject = async () => {
     if (!detection) return
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/actions/${detectionId}/reject?approved_by=user@example.com`,
+        `${apiUrl}/api/v1/actions/${detectionId}/reject?approved_by=user@example.com`,
         {
           method: 'POST',
         }

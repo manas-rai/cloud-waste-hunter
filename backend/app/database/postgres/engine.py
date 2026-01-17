@@ -20,13 +20,17 @@ from app.core.config import settings
 
 
 def get_async_database_url() -> str:
-    """Convert PostgreSQL URL to asyncpg format"""
+    """Convert PostgreSQL URL to asyncpg format and handle SSL params"""
     url = settings.DATABASE_URL
     if url.startswith("postgresql://"):
         # Replace psycopg2 driver with asyncpg
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql+psycopg2://"):
         url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+
+    # asyncpg uses 'ssl=' instead of 'sslmode='
+    if "sslmode=" in url:
+        url = url.replace("sslmode=", "ssl=", 1)
     return url
 
 

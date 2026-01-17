@@ -1,0 +1,36 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Sensitive data
+.env
+*.key
+*.pem
+
+# IDEs and Tools
+.vscode/
+.idea/
+.git/
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+
+# OS files
+.DS_Store
+Thumbs.db

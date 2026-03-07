@@ -12,8 +12,8 @@ tags = {
 }
 
 # Database
-db_username = "dbadmin"
-db_password = "manasmr@4133" # In real use, pass this via CLI or Secret Manager
+db_username = ""
+db_password = "" # In real use, pass this via CLI or Secret Manager
 
 # Compute
 backend_image = "public.ecr.aws/nginx/nginx:latest" # Placeholder image for testing

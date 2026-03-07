@@ -56,3 +56,9 @@ htmlcov/
 # Logs
 logs/
 *.log
+
+# Terraform
+*.tfplan
+*.tfstate
+*.tfstate.*
+.terraform

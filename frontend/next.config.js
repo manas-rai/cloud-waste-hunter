@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  output: 'export',
+  basePath: '/cloud-waste-hunter',
+  images: { unoptimized: true },
 }
 
 module.exports = nextConfig

@@ -26,16 +26,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # If your frontend is in a subdirectory, uncomment below
-          # cache-dependency-path: ./frontend/package-lock.json
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
 
       - name: Install dependencies
+        working-directory: ./frontend
         run: npm ci
-        # working-directory: ./frontend # Uncomment if in a subdirectory
 
       - name: Build
+        working-directory: ./frontend
         run: npm run build
-        # working-directory: ./frontend # Uncomment if in a subdirectory
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -43,8 +43,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Path to your build output (e.g., ./build, ./dist, ./frontend/dist)
-          path: './dist'
+          # Path to Next.js static export output
+          path: './frontend/out'
 
   deploy:
     environment:

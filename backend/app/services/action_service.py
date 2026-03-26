@@ -8,12 +8,17 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.aws.client import AWSClientFactory
+from app.aws.snapshot_client import SnapshotClient, SnapshotNotFoundError
 from app.repositories.audit_repository import audit_repository
 from app.repositories.detection_repository import detection_repository
 from app.safety.dry_run import DryRunExecutor
 from app.safety.executor import SafeExecutor
 from app.schemas.audit import ActionType, AuditLog, AuditStatus
 from app.schemas.detection import Detection, DetectionStatus, ResourceType
+
+
+class SafetyCheckFailedError(Exception):
+    """Raised when a pre-execution safety check blocks the action"""
 
 logger = structlog.get_logger()
 
@@ -62,6 +67,12 @@ class ActionService:
             preview = dry_run.preview_snapshot_delete(
                 detection.resource_id, detection_dict
             )
+            # Promote snapshot metadata to top-level fields for API consumers
+            snap_meta = preview.get("snapshot_metadata", {})
+            preview["snapshot_age_days"] = snap_meta.get("snapshot_age_days")
+            preview["snapshot_size_gb"] = snap_meta.get("snapshot_size_gb")
+            ami_links = snap_meta.get("linked_ami_ids", [])
+            preview["linked_ami_id"] = ami_links[0] if ami_links else None
         else:
             raise ValueError(f"Unknown resource type: {detection.resource_type.value}")
 
@@ -99,6 +110,12 @@ class ActionService:
 
         if detection.status != DetectionStatus.PENDING:
             raise ValueError(f"Detection already {detection.status.value}")
+
+        # STEP 1.5: Run live safety checks before modifying detection state.
+        # This ensures we never mark a detection APPROVED if the AWS resource
+        # is unsafe to delete.
+        if detection.resource_type == ResourceType.EBS_SNAPSHOT and not dry_run:
+            self._live_snapshot_safety_check(detection.resource_id)
 
         # STEP 2: Update detection to APPROVED
         # SQLAlchemy tracks this change automatically
@@ -183,6 +200,42 @@ class ActionService:
             # TRANSACTION COMMITS automatically in get_db() when function returns
             # All changes (detection + audit_log) committed together
             return {"status": "success"}
+
+    def _live_snapshot_safety_check(
+        self,
+        snapshot_id: str,
+        client_factory: AWSClientFactory | None = None,
+    ) -> None:
+        """
+        Run a live safety check before deleting a snapshot.
+
+        Calls EC2 describe_images to verify no active AMIs still reference
+        this snapshot. Raises SafetyCheckFailedError if any are found.
+
+        Args:
+            snapshot_id: EBS snapshot ID to check
+            client_factory: Optional AWS client factory (uses default if None)
+
+        Raises:
+            SafetyCheckFailedError: If the snapshot is linked to active AMI(s)
+            SnapshotNotFoundError: If the snapshot no longer exists in AWS
+        """
+        sc = SnapshotClient(client_factory)
+        try:
+            linked_amis = sc.check_snapshot_ami_links(snapshot_id)
+        except SnapshotNotFoundError:
+            # Snapshot already gone — nothing to delete, treat as safe
+            logger.warning(
+                "Snapshot not found during safety check; skipping deletion",
+                snapshot_id=snapshot_id,
+            )
+            return
+
+        if linked_amis:
+            raise SafetyCheckFailedError(
+                f"Snapshot {snapshot_id} is still referenced by active AMI(s): "
+                f"{', '.join(linked_amis)}. Deletion blocked to prevent data loss."
+            )
 
     async def _execute_action(
         self,

@@ -21,6 +21,11 @@ interface Preview {
   resource_id: string
   resource_type: string
   dry_run: boolean
+  would_delete?: boolean
+  blocked_reason?: string | null
+  snapshot_age_days?: number | null
+  snapshot_size_gb?: number | null
+  linked_ami_id?: string | null
   impact: any
   risks: string[]
   recommendations: string[]
@@ -35,6 +40,7 @@ export default function ActionPage() {
   const [preview, setPreview] = useState<Preview | null>(null)
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState(false)
+  const [snapshotConfirmed, setSnapshotConfirmed] = useState(false)
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -172,6 +178,72 @@ export default function ActionPage() {
           </dl>
         </div>
 
+        {/* Snapshot Metadata Card */}
+        {detection.resource_type === 'ebs_snapshot' && preview && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg shadow p-6 mb-6">
+            <h2 className="text-lg font-semibold text-blue-900 mb-4">📸 Snapshot Details</h2>
+            <dl className="grid grid-cols-3 gap-4">
+              <div>
+                <dt className="text-sm font-medium text-blue-600">Age</dt>
+                <dd className="mt-1 text-sm font-semibold text-blue-900">
+                  {preview.snapshot_age_days != null ? `${preview.snapshot_age_days} days` : 'Unknown'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-blue-600">Size</dt>
+                <dd className="mt-1 text-sm font-semibold text-blue-900">
+                  {preview.snapshot_size_gb != null ? `${preview.snapshot_size_gb} GB` : 'Unknown'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-blue-600">Linked AMI</dt>
+                <dd className="mt-1 text-sm font-semibold text-blue-900">
+                  {preview.linked_ami_id ? (
+                    <span className="text-red-600">{preview.linked_ami_id}</span>
+                  ) : (
+                    <span className="text-green-600">None</span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+            {preview.blocked_reason && (
+              <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded text-sm text-red-800">
+                <strong>Blocked:</strong> {preview.blocked_reason}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Destructive-action warning for snapshots */}
+        {detection.resource_type === 'ebs_snapshot' && detection.status === 'pending' && (
+          <div className="bg-red-50 border-2 border-red-400 rounded-lg shadow p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <h2 className="text-lg font-bold text-red-800 mb-1">
+                  Warning: Permanent Action
+                </h2>
+                <p className="text-red-700 text-sm mb-4">
+                  Deleting a snapshot is <strong>permanent and cannot be undone</strong>.
+                  Once deleted, the snapshot data is gone forever. Ensure you no longer
+                  need this snapshot for disaster recovery or compliance before proceeding.
+                </p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={snapshotConfirmed}
+                    onChange={(e) => setSnapshotConfirmed(e.target.checked)}
+                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-red-800">
+                    I understand this action is permanent and cannot be undone
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Preview */}
         {preview && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -224,8 +296,16 @@ export default function ActionPage() {
               </button>
               <button
                 onClick={() => handleApprove(false)}
-                disabled={approving}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                disabled={
+                  approving ||
+                  (detection.resource_type === 'ebs_snapshot' && !snapshotConfirmed)
+                }
+                title={
+                  detection.resource_type === 'ebs_snapshot' && !snapshotConfirmed
+                    ? 'You must confirm the permanent-action warning above before approving'
+                    : undefined
+                }
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {approving ? 'Processing...' : 'Approve & Execute'}
               </button>
@@ -237,6 +317,11 @@ export default function ActionPage() {
                 Reject
               </button>
             </div>
+            {detection.resource_type === 'ebs_snapshot' && !snapshotConfirmed && (
+              <p className="mt-3 text-sm text-red-600">
+                Check the confirmation box above to enable the Approve button.
+              </p>
+            )}
           </div>
         )}
       </main>

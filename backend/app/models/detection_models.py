@@ -116,11 +116,34 @@ class ScanResponse(BaseModel):
         }
 
 
+class SnapshotActionPreview(BaseModel):
+    """Extended preview response for snapshot actions with live AWS metadata"""
+
+    action: str
+    resource_id: str
+    resource_type: str
+    dry_run: bool
+    would_delete: bool = True
+    blocked_reason: str | None = None
+    snapshot_age_days: int | None = None
+    snapshot_size_gb: float | None = None
+    linked_ami_id: str | None = None
+    impact: dict[str, Any] = Field(default_factory=dict)
+    risks: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    previewed_at: str = ""
+
+
 class DetectionDetailResponse(BaseModel):
     """Response model for detection detail with preview"""
 
     detection: DetectionResponse
     action_preview: dict[str, Any]
+
+    # Optional snapshot-specific fields populated when resource_type == 'ebs_snapshot'
+    snapshot_age_days: int | None = None
+    snapshot_size_gb: float | None = None
+    linked_ami_id: str | None = None
 
     class Config:
         json_schema_extra: ClassVar[dict[str, Any]] = {

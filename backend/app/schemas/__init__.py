@@ -23,6 +23,7 @@ from app.schemas.detection import (
     DetectionStatus,
     ResourceType,
 )
+from app.schemas.nat_gateway import NATGateway, NATGatewayMetric
 
 __all__ = [
     "ActionType",
@@ -31,6 +32,8 @@ __all__ = [
     "Base",
     "Detection",
     "DetectionStatus",
+    "NATGateway",
+    "NATGatewayMetric",
     "ResourceType",
     "TimestampMixin",
 ]

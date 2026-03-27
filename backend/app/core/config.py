@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     EBS_UNATTACHED_DAYS: int = 30
     SNAPSHOT_AGE_DAYS: int = 90
 
+    # NAT Gateway Detection Thresholds
+    NAT_GATEWAY_IDLE_BYTES_THRESHOLD: float = 1_073_741_824  # 1 GB in bytes (7-day sum)
+    NAT_GATEWAY_IDLE_CONNECTIONS_THRESHOLD: float = 1.0  # avg ActiveConnectionCount
+
     # Safety Settings
     DRY_RUN_ENABLED: bool = True
     AUTO_APPROVE_ENABLED: bool = False

@@ -19,6 +19,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from app.database.postgres.engine import async_engine
 from app.schemas.base import Base
 
+# Import all schema modules so SQLAlchemy registers every table with Base.metadata
+import app.schemas  # noqa: F401, E402
+
 
 async def init_database(drop_existing: bool = False):
     """
@@ -43,6 +46,8 @@ async def init_database(drop_existing: bool = False):
     print("\nCreated tables:")
     print("  - detections")
     print("  - audit_logs")
+    print("  - nat_gateways")
+    print("  - nat_gateway_metrics")
 
 
 async def drop_database():

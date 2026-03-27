@@ -15,6 +15,7 @@ class ResourceType(str, enum.Enum):
     EC2_INSTANCE = "ec2_instance"
     EBS_VOLUME = "ebs_volume"
     EBS_SNAPSHOT = "ebs_snapshot"
+    NAT_GATEWAY = "nat_gateway"
 
 
 class DetectionStatus(str, enum.Enum):

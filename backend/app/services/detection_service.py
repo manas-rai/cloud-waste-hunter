@@ -6,6 +6,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.aws.client import AWSClientFactory
+from app.aws.nat_gateway import NATGatewayCollector
 from app.aws.resources import (
     EBSResourceCollector,
     EC2ResourceCollector,
@@ -13,6 +14,7 @@ from app.aws.resources import (
 )
 from app.detection.ebs_detector import EBSUnattachedDetector
 from app.detection.ec2_detector import EC2IdleDetector
+from app.detection.nat_gateway_detector import NatGatewayDetector
 from app.detection.snapshot_detector import SnapshotDetector
 from app.repositories.detection_repository import detection_repository
 from app.schemas.detection import ResourceType
@@ -125,6 +127,15 @@ class DetectionService:
             except Exception as e:
                 logger.exception("Snapshot detection failed", error=str(e))
 
+        # NAT Gateway Detection
+        if ResourceType.NAT_GATEWAY in resource_types:
+            try:
+                nat_gw_detections = await self._detect_idle_nat_gateways(client_factory)
+                all_detections.extend(nat_gw_detections)
+                logger.info("NAT Gateway detections", count=len(nat_gw_detections))
+            except Exception as e:
+                logger.exception("NAT Gateway detection failed", error=str(e))
+
         return all_detections
 
     async def _detect_ec2_idle(self, client_factory: AWSClientFactory) -> list[dict]:
@@ -148,6 +159,22 @@ class DetectionService:
         snapshot_collector = SnapshotCollector(client_factory)
         snapshot_detector = SnapshotDetector(snapshot_collector)
         return snapshot_detector.detect_old_snapshots()
+
+    async def _detect_idle_nat_gateways(
+        self, client_factory: AWSClientFactory
+    ) -> list[dict]:
+        """Detect idle NAT Gateways"""
+        collector = NATGatewayCollector(client_factory)
+        nat_gateways = collector.get_all_nat_gateways()
+
+        # Enrich each gateway with its CloudWatch metrics
+        enriched = []
+        for gw in nat_gateways:
+            metrics = collector.get_nat_gateway_metrics(gw["nat_gateway_id"])
+            enriched.append({**gw, **metrics})
+
+        detector = NatGatewayDetector()
+        return detector.detect(enriched)
 
     async def _save_detections(
         self,

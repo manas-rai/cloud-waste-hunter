@@ -43,6 +43,7 @@ async def init_database(drop_existing: bool = False):
     print("\nCreated tables:")
     print("  - detections")
     print("  - audit_logs")
+    print("  - nat_gateways")
 
 
 async def drop_database():

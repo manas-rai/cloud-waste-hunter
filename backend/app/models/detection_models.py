@@ -22,6 +22,7 @@ class DetectionPayload(BaseModel):
             ResourceType.EC2_INSTANCE,
             ResourceType.EBS_VOLUME,
             ResourceType.EBS_SNAPSHOT,
+            ResourceType.NAT_GATEWAY,
         ],
         description="List of resource types to scan. Defaults to all types.",
     )

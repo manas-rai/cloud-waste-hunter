@@ -19,6 +19,7 @@ export default function DetectionsPage() {
   const [detections, setDetections] = useState<Detection[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
+  const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all')
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -34,9 +35,9 @@ export default function DetectionsPage() {
       })
   }, [])
 
-  const filteredDetections = filter === 'all'
-    ? detections
-    : detections.filter(d => d.status === filter)
+  const filteredDetections = detections
+    .filter(d => filter === 'all' || d.status === filter)
+    .filter(d => resourceTypeFilter === 'all' || d.resource_type === resourceTypeFilter)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -53,9 +54,18 @@ export default function DetectionsPage() {
       case 'ec2_instance': return 'EC2 Instance'
       case 'ebs_volume': return 'EBS Volume'
       case 'ebs_snapshot': return 'EBS Snapshot'
+      case 'nat_gateway': return 'NAT Gateway'
       default: return type
     }
   }
+
+  const resourceTypeFilters = [
+    { label: 'All', value: 'all' },
+    { label: 'EC2 Instance', value: 'ec2_instance' },
+    { label: 'EBS Volume', value: 'ebs_volume' },
+    { label: 'EBS Snapshot', value: 'ebs_snapshot' },
+    { label: 'NAT Gateway', value: 'nat_gateway' },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,20 +82,40 @@ export default function DetectionsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex gap-2">
-            {['all', 'pending', 'approved', 'executed', 'rejected'].map(status => (
-              <button
-                key={status}
-                onClick={() => setFilter(status)}
-                className={`px-4 py-2 rounded-md ${filter === status
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </button>
-            ))}
+        <div className="bg-white rounded-lg shadow p-4 mb-6 space-y-3">
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Status</p>
+            <div className="flex gap-2 flex-wrap">
+              {['all', 'pending', 'approved', 'executed', 'rejected'].map(status => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={`px-4 py-2 rounded-md ${filter === status
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Resource Type</p>
+            <div className="flex gap-2 flex-wrap">
+              {resourceTypeFilters.map(({ label, value }) => (
+                <button
+                  key={value}
+                  onClick={() => setResourceTypeFilter(value)}
+                  className={`px-4 py-2 rounded-md ${resourceTypeFilter === value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

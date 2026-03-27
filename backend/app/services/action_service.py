@@ -8,6 +8,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.aws.client import AWSClientFactory
+from app.aws.snapshot_client import SnapshotClient
 from app.repositories.audit_repository import audit_repository
 from app.repositories.detection_repository import detection_repository
 from app.safety.dry_run import DryRunExecutor
@@ -16,6 +17,10 @@ from app.schemas.audit import ActionType, AuditLog, AuditStatus
 from app.schemas.detection import Detection, DetectionStatus, ResourceType
 
 logger = structlog.get_logger()
+
+
+class SafetyCheckFailedError(Exception):
+    """Raised when a pre-execution safety check fails (e.g. snapshot linked to active AMI)"""
 
 
 class ActionService:
@@ -33,6 +38,7 @@ class ActionService:
         self,
         db: AsyncSession,
         detection_id: int,
+        client_factory: AWSClientFactory | None = None,
     ) -> dict:
         """
         Preview action impact (dry-run)
@@ -40,6 +46,7 @@ class ActionService:
         Args:
             db: Database session
             detection_id: Detection ID
+            client_factory: Optional AWS client factory (used to enrich snapshot previews)
 
         Returns:
             Preview result with impact analysis
@@ -59,6 +66,25 @@ class ActionService:
         elif detection.resource_type.value == "ebs_volume":
             preview = dry_run.preview_ebs_delete(detection.resource_id, detection_dict)
         elif detection.resource_type.value == "ebs_snapshot":
+            # Enrich with live AWS snapshot metadata before preview
+            if client_factory is None:
+                client_factory = AWSClientFactory()
+            snapshot_client = SnapshotClient(client_factory)
+            try:
+                snapshot_meta = snapshot_client.describe_snapshot(detection.resource_id)
+                ami_links = snapshot_client.check_snapshot_ami_links(
+                    detection.resource_id
+                )
+                detection_dict["snapshot_age_days"] = snapshot_meta["age_days"]
+                detection_dict["snapshot_size_gb"] = snapshot_meta["size_gb"]
+                detection_dict["linked_ami_ids"] = ami_links
+            except Exception as e:
+                logger.warning(
+                    "Failed to get live snapshot metadata for preview",
+                    detection_id=detection_id,
+                    resource_id=detection.resource_id,
+                    error=str(e),
+                )
             preview = dry_run.preview_snapshot_delete(
                 detection.resource_id, detection_dict
             )
@@ -118,6 +144,7 @@ class ActionService:
                 detection,
                 approved_by,
                 dry_run,
+                client_factory,
             )
 
             # STEP 4: Update detection status based on AWS result
@@ -184,12 +211,37 @@ class ActionService:
             # All changes (detection + audit_log) committed together
             return {"status": "success"}
 
+    def _live_snapshot_safety_check(
+        self,
+        snapshot_id: str,
+        client_factory: AWSClientFactory,
+    ) -> None:
+        """
+        Verify the snapshot is not linked to any active AMIs before deletion.
+
+        Args:
+            snapshot_id: EBS snapshot ID to check
+            client_factory: AWS client factory
+
+        Raises:
+            SafetyCheckFailedError: if the snapshot is still referenced by active AMIs
+        """
+        snapshot_client = SnapshotClient(client_factory)
+        ami_ids = snapshot_client.check_snapshot_ami_links(snapshot_id)
+        if ami_ids:
+            raise SafetyCheckFailedError(
+                f"Snapshot {snapshot_id} is still linked to active AMI(s): "
+                f"{', '.join(ami_ids)}. Deregister the AMI(s) before deleting "
+                "this snapshot."
+            )
+
     async def _execute_action(
         self,
         executor: SafeExecutor,
         detection: Detection,
         approved_by: str,
         dry_run: bool,
+        client_factory: AWSClientFactory | None = None,
     ) -> dict:
         """Execute action based on resource type"""
         resource_type = detection.resource_type.value
@@ -200,6 +252,9 @@ class ActionService:
         elif resource_type == "ebs_volume":
             return executor.delete_ebs_volume(resource_id, approved_by, dry_run)
         elif resource_type == "ebs_snapshot":
+            # Run live safety check before actual deletion (not on dry runs)
+            if not dry_run and client_factory is not None:
+                self._live_snapshot_safety_check(resource_id, client_factory)
             return executor.delete_snapshot(resource_id, approved_by, dry_run)
         else:
             raise ValueError(f"Unknown resource type: {resource_type}")

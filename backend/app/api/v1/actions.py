@@ -11,7 +11,7 @@ Business logic is delegated to the service layer.
 """
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -20,11 +20,54 @@ from app.models.action_models import (
     BatchApprovalRequest,
     BatchRejectRequest,
 )
-from app.services.action_service import action_service
+from app.services.action_service import SafetyCheckFailedError, action_service
+from app.services.detection_service import detection_service
 
 logger = structlog.get_logger()
 
 router = APIRouter()
+
+
+# =============================================================================
+# LIST ROUTE
+# =============================================================================
+
+
+@router.get("/")
+async def list_actions(
+    status: str | None = Query(default=None),
+    resource_type: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List detections/actions with optional filters.
+
+    Args:
+        status: Filter by status (pending, approved, executed, rejected, failed)
+        resource_type: Filter by resource type (ec2_instance, ebs_volume, ebs_snapshot)
+        limit: Page size (max 100)
+        offset: Pagination offset
+
+    Returns:
+        Paginated list of detections
+    """
+    try:
+        result = await detection_service.list_detections(
+            db=db,
+            status=status,
+            resource_type=resource_type,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        logger.exception("List actions failed", error=str(e), exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list actions: {e!s}",
+        ) from e
+    return result
 
 
 # =============================================================================
@@ -231,6 +274,8 @@ async def approve_detection(
             approved_by=request.approved_by,
             dry_run=request.dry_run,
         )
+    except SafetyCheckFailedError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     except ValueError as e:
         # Business logic errors (not found, invalid status, etc.)
         status_code = 404 if "not found" in str(e).lower() else 400

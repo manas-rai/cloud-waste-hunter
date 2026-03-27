@@ -116,11 +116,24 @@ class ScanResponse(BaseModel):
         }
 
 
+class SnapshotMetadata(BaseModel):
+    """Optional snapshot-specific metadata enriched from live AWS data"""
+
+    snapshot_age_days: int | None = None
+    snapshot_size_gb: float | None = None
+    linked_ami_id: str | None = None
+    blocked_reason: str | None = None
+
+
 class DetectionDetailResponse(BaseModel):
     """Response model for detection detail with preview"""
 
     detection: DetectionResponse
     action_preview: dict[str, Any]
+    # Snapshot-specific fields (populated from live AWS data when resource_type == ebs_snapshot)
+    snapshot_age_days: int | None = None
+    snapshot_size_gb: float | None = None
+    linked_ami_id: str | None = None
 
     class Config:
         json_schema_extra: ClassVar[dict[str, Any]] = {
@@ -133,5 +146,8 @@ class DetectionDetailResponse(BaseModel):
                     "can_rollback": True,
                     "rollback_window_days": 7,
                 },
+                "snapshot_age_days": None,
+                "snapshot_size_gb": None,
+                "linked_ami_id": None,
             }
         }

@@ -22,6 +22,7 @@ export default function ActionsPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [resourceTypeFilter, setResourceTypeFilter] = useState('all')
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [batchProcessing, setBatchProcessing] = useState(false)
   const [stats, setStats] = useState({
@@ -32,13 +33,16 @@ export default function ActionsPage() {
     failed: 0,
   })
 
-  const fetchDetections = async (status?: string) => {
+  const fetchDetections = async (status?: string, resourceType?: string) => {
     setLoading(true)
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     try {
       const params = new URLSearchParams()
       if (status && status !== 'all') {
         params.append('status', status)
+      }
+      if (resourceType && resourceType !== 'all') {
+        params.append('resource_type', resourceType)
       }
 
       const response = await fetch(
@@ -75,8 +79,8 @@ export default function ActionsPage() {
   }
 
   useEffect(() => {
-    fetchDetections(statusFilter)
-  }, [statusFilter])
+    fetchDetections(statusFilter, resourceTypeFilter)
+  }, [statusFilter, resourceTypeFilter])
 
   const handleApprove = async (detectionId: number) => {
     if (!confirm('Approve this action? This will execute the action on AWS.')) {
@@ -326,7 +330,7 @@ export default function ActionsPage() {
           </div>
         </div>
 
-        {/* Filter */}
+        {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter by Status</h2>
           <div className="flex flex-wrap gap-2">
@@ -343,6 +347,30 @@ export default function ActionsPage() {
                   }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          <h2 className="text-lg font-semibold text-gray-900 mt-5 mb-3">Filter by Resource Type</h2>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: 'all', label: 'All Types' },
+              { value: 'ec2_instance', label: '🖥️ EC2 Instance' },
+              { value: 'ebs_volume', label: '💾 EBS Volume' },
+              { value: 'ebs_snapshot', label: '📸 EBS Snapshot' },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  setResourceTypeFilter(value)
+                  setSelectedIds([])
+                }}
+                className={`px-4 py-2 rounded-md font-medium transition ${resourceTypeFilter === value
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                {label}
               </button>
             ))}
           </div>

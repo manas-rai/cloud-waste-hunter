@@ -8,7 +8,8 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.detection import Detection, DetectionStatus
+from app.models.detection_models import NatGatewayDetectionModel
+from app.schemas.detection import Detection, DetectionStatus, NatGatewayDetection
 
 logger = structlog.get_logger()
 
@@ -215,3 +216,89 @@ class DetectionRepository:
 
 # Singleton instance
 detection_repository = DetectionRepository()
+
+
+class NatGatewayDetectionRepository:
+    """Repository for NatGatewayDetection model"""
+
+    async def save_nat_gateway_detections(
+        self,
+        db: AsyncSession,
+        detections: list[NatGatewayDetectionModel],
+    ) -> list[NatGatewayDetection]:
+        """
+        Bulk save NAT Gateway detections
+
+        Args:
+            db: Database session
+            detections: List of NatGatewayDetectionModel instances
+
+        Returns:
+            List of saved NatGatewayDetection ORM objects
+        """
+        db_detections = []
+        now = datetime.now(UTC)
+
+        for detection in detections:
+            db_detection = NatGatewayDetection(
+                resource_id=detection.resource_id,
+                region=detection.region,
+                account_id=detection.account_id,
+                vpc_id=detection.vpc_id,
+                subnet_id=detection.subnet_id,
+                bytes_in_7d=detection.bytes_in_7d,
+                bytes_out_7d=detection.bytes_out_7d,
+                total_bytes_7d=detection.total_bytes_7d,
+                is_idle=detection.is_idle,
+                waste_score=detection.waste_score,
+                detected_at=now,
+            )
+            db.add(db_detection)
+            db_detections.append(db_detection)
+
+        await db.flush()
+
+        for db_detection in db_detections:
+            await db.refresh(db_detection)
+
+        logger.info(
+            "Saved NAT Gateway detections to database", count=len(db_detections)
+        )
+
+        return db_detections
+
+    async def get_nat_gateway_detections(
+        self,
+        db: AsyncSession,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[NatGatewayDetection], int]:
+        """
+        Get all NAT Gateway detections with pagination
+
+        Args:
+            db: Database session
+            limit: Page size
+            offset: Pagination offset
+
+        Returns:
+            Tuple of (detections list, total count)
+        """
+        stmt = select(NatGatewayDetection)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await db.execute(count_stmt)
+        total = total_result.scalar_one()
+
+        stmt = (
+            stmt.order_by(NatGatewayDetection.detected_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await db.execute(stmt)
+        detections = result.scalars().all()
+
+        return list(detections), total
+
+
+nat_gateway_detection_repository = NatGatewayDetectionRepository()

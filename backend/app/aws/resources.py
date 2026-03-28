@@ -202,3 +202,40 @@ class SnapshotCollector:
             )
 
         return amis
+
+
+def list_nat_gateways(ec2_client) -> list[dict]:
+    """
+    List all available NAT Gateways
+
+    Args:
+        ec2_client: Boto3 EC2 client
+
+    Returns:
+        List of NAT Gateway dicts with id, name, vpc_id, subnet_id, state, account_id, region
+    """
+    nat_gateways = []
+
+    try:
+        paginator = ec2_client.get_paginator("describe_nat_gateways")
+        for page in paginator.paginate(
+            Filters=[{"Name": "state", "Values": ["available"]}]
+        ):
+            for ngw in page.get("NatGateways", []):
+                tags = {tag["Key"]: tag["Value"] for tag in ngw.get("Tags", [])}
+                nat_gateways.append(
+                    {
+                        "id": ngw["NatGatewayId"],
+                        "name": tags.get("Name", ngw["NatGatewayId"]),
+                        "vpc_id": ngw.get("VpcId"),
+                        "subnet_id": ngw.get("SubnetId"),
+                        "state": ngw.get("State"),
+                        "account_id": ngw.get("ConnectivityType"),  # placeholder
+                        "region": ec2_client.meta.region_name,
+                        "tags": tags,
+                    }
+                )
+    except Exception as e:
+        logger.warning("Error listing NAT Gateways", error=str(e))
+
+    return nat_gateways

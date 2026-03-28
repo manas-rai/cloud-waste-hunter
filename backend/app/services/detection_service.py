@@ -10,11 +10,16 @@ from app.aws.resources import (
     EBSResourceCollector,
     EC2ResourceCollector,
     SnapshotCollector,
+    list_nat_gateways,
 )
 from app.detection.ebs_detector import EBSUnattachedDetector
 from app.detection.ec2_detector import EC2IdleDetector
+from app.detection.nat_gateway_detector import NatGatewayDetector
 from app.detection.snapshot_detector import SnapshotDetector
-from app.repositories.detection_repository import detection_repository
+from app.repositories.detection_repository import (
+    detection_repository,
+    nat_gateway_detection_repository,
+)
 from app.schemas.detection import ResourceType
 
 logger = structlog.get_logger()
@@ -148,6 +153,86 @@ class DetectionService:
         snapshot_collector = SnapshotCollector(client_factory)
         snapshot_detector = SnapshotDetector(snapshot_collector)
         return snapshot_detector.detect_old_snapshots()
+
+    async def scan_nat_gateways(
+        self,
+        db: AsyncSession,
+        client_factory: AWSClientFactory | None = None,
+    ) -> dict:
+        """
+        Scan NAT Gateways for idle detection and persist results
+
+        Args:
+            db: Database session
+            client_factory: Optional AWS client factory
+
+        Returns:
+            Dict with total, idle_count, and detections list
+        """
+        if client_factory is None:
+            client_factory = AWSClientFactory()
+
+        logger.info("Starting NAT Gateway scan")
+
+        try:
+            ec2_client = client_factory.get_ec2_client()
+            cw_client = client_factory.get_cloudwatch_client()
+
+            nat_gateways = list_nat_gateways(ec2_client)
+            logger.info("NAT Gateways discovered", count=len(nat_gateways))
+
+            detector = NatGatewayDetector()
+            detections = detector.detect(nat_gateways, cw_client=cw_client)
+
+            db_detections = await nat_gateway_detection_repository.save_nat_gateway_detections(
+                db, detections
+            )
+
+            idle_count = sum(1 for d in detections if d.is_idle)
+
+            logger.info(
+                "NAT Gateway scan completed",
+                total=len(detections),
+                idle=idle_count,
+            )
+
+            return {
+                "total": len(db_detections),
+                "idle_count": idle_count,
+                "detections": [d.to_dict() for d in db_detections],
+            }
+
+        except Exception as e:
+            logger.exception("NAT Gateway scan failed", error=str(e), exc_info=True)
+            raise
+
+    async def list_nat_gateway_detections(
+        self,
+        db: AsyncSession,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict:
+        """
+        List stored NAT Gateway detections
+
+        Args:
+            db: Database session
+            limit: Page size
+            offset: Pagination offset
+
+        Returns:
+            Dict with total and detections list
+        """
+        detections, total = await nat_gateway_detection_repository.get_nat_gateway_detections(
+            db=db,
+            limit=limit,
+            offset=offset,
+        )
+
+        return {
+            "total": total,
+            "detections": [d.to_dict() for d in detections],
+        }
 
     async def _save_detections(
         self,

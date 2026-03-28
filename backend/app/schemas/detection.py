@@ -3,8 +3,9 @@ Detection Database Schema (SQLAlchemy Model)
 """
 
 import enum
+from datetime import UTC, datetime
 
-from sqlalchemy import JSON, Column, DateTime, Enum, Float, Integer, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, Float, Integer, String
 
 from app.schemas.base import Base, TimestampMixin
 
@@ -72,4 +73,44 @@ class Detection(Base, TimestampMixin):
             "metadata": self.meta_data,  # API uses 'metadata', column is 'meta_data'
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class NatGatewayDetection(Base):
+    """NAT Gateway detection database model (table)"""
+
+    __tablename__ = "nat_gateway_detections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(String(255), nullable=False, index=True)
+    region = Column(String(50), nullable=False)
+    account_id = Column(String(50), nullable=True)
+    vpc_id = Column(String(255), nullable=True)
+    subnet_id = Column(String(255), nullable=True)
+    bytes_in_7d = Column(Float, nullable=False, default=0.0)
+    bytes_out_7d = Column(Float, nullable=False, default=0.0)
+    total_bytes_7d = Column(Float, nullable=False, default=0.0)
+    is_idle = Column(Boolean, nullable=False, default=False)
+    waste_score = Column(Float, nullable=False, default=0.0)
+    detected_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "resource_id": self.resource_id,
+            "region": self.region,
+            "account_id": self.account_id,
+            "vpc_id": self.vpc_id,
+            "subnet_id": self.subnet_id,
+            "bytes_in_7d": self.bytes_in_7d,
+            "bytes_out_7d": self.bytes_out_7d,
+            "total_bytes_7d": self.total_bytes_7d,
+            "is_idle": self.is_idle,
+            "waste_score": self.waste_score,
+            "detected_at": self.detected_at.isoformat() if self.detected_at else None,
         }

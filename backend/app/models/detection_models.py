@@ -14,6 +14,33 @@ from pydantic import BaseModel, Field
 from app.schemas.detection import ResourceType
 
 
+class EBSVolumeDetection(BaseModel):
+    """Pydantic model representing an unattached EBS volume detection"""
+
+    volume_id: str
+    size_gb: int
+    volume_type: str
+    availability_zone: str
+    region: str
+    create_time: str
+    days_unattached: int
+    estimated_monthly_savings_usd: float
+
+    class Config:
+        json_schema_extra: ClassVar[dict[str, Any]] = {
+            "example": {
+                "volume_id": "vol-0a1b2c3d4e5f67890",
+                "size_gb": 100,
+                "volume_type": "gp3",
+                "availability_zone": "us-east-1a",
+                "region": "us-east-1",
+                "create_time": "2025-11-01T00:00:00+00:00",
+                "days_unattached": 45,
+                "estimated_monthly_savings_usd": 8.0,
+            }
+        }
+
+
 class DetectionPayload(BaseModel):
     """Request payload for scanning resources"""
 

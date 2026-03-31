@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from structlog import get_logger
 
 from app.aws.resources import EBSResourceCollector
+from app.core.config import settings
 
 logger = get_logger()
 
@@ -18,16 +19,18 @@ class EBSUnattachedDetector:
     Criteria:
     - State = "available" (unattached)
     - No active attachments
+    - Unattached for >= EBS_UNATTACHED_DAYS days (default: 30)
     """
 
     def __init__(self, resource_collector: EBSResourceCollector):
         self.collector = resource_collector
+        self.min_days_unattached = settings.EBS_UNATTACHED_DAYS
 
     def detect_unattached_volumes(
         self, volumes: list[dict] | None = None
     ) -> list[dict]:
         """
-        Detect unattached EBS volumes
+        Detect unattached EBS volumes that have been unattached for >= 30 days
 
         Args:
             volumes: Optional list of volumes (if None, fetches all)
@@ -61,11 +64,21 @@ class EBSUnattachedDetector:
                 if create_time.tzinfo is None:
                     create_time = create_time.replace(tzinfo=UTC)
 
-                # Calculate age (for metadata, no minimum age requirement)
-                age_days = (datetime.now(UTC) - create_time).days
+                # Calculate days unattached
+                days_unattached = (datetime.now(UTC) - create_time).days
+
+                # Enforce minimum age threshold (default: 30 days)
+                if days_unattached < self.min_days_unattached:
+                    continue
 
                 # Calculate estimated savings
                 savings = self._estimate_savings(volume)
+
+                create_time_iso = (
+                    create_time.isoformat()
+                    if isinstance(create_time, datetime)
+                    else str(create_time)
+                )
 
                 detections.append(
                     {
@@ -75,19 +88,16 @@ class EBSUnattachedDetector:
                             "Name", volume["volume_id"]
                         ),
                         "region": volume["region"],
-                        "size_gb": volume["size_gb"],
-                        "volume_type": volume["volume_type"],
-                        "state": volume["state"],
-                        "age_days": age_days,
-                        "create_time": (
-                            create_time.isoformat()
-                            if isinstance(create_time, datetime)
-                            else str(create_time)
-                        ),
                         "confidence_score": 0.95,  # High confidence for rule-based detection
                         "estimated_monthly_savings_inr": savings,
                         "detected_at": datetime.now(UTC).isoformat(),
                         "metadata": {
+                            "size_gb": volume["size_gb"],
+                            "volume_type": volume["volume_type"],
+                            "availability_zone": volume.get("availability_zone", ""),
+                            "days_unattached": days_unattached,
+                            "create_time": create_time_iso,
+                            "state": volume["state"],
                             "encrypted": volume.get("encrypted", False),
                             "tags": volume.get("tags", {}),
                         },

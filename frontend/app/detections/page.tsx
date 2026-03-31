@@ -13,6 +13,15 @@ interface Detection {
   estimated_monthly_savings_inr: number
   status: string
   created_at: string
+  metadata?: {
+    size_gb?: number
+    volume_type?: string
+    days_unattached?: number
+    availability_zone?: string
+    avg_cpu_percent?: number
+    age_days?: number
+    [key: string]: unknown
+  }
 }
 
 export default function DetectionsPage() {
@@ -119,6 +128,9 @@ export default function DetectionsPage() {
                     Region
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Details
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Confidence
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -148,6 +160,23 @@ export default function DetectionsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {detection.region}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {detection.resource_type === 'ebs_volume' && detection.metadata ? (
+                        <div className="space-y-0.5">
+                          {detection.metadata.volume_type && (
+                            <div><span className="font-medium">Vol type:</span> {detection.metadata.volume_type}</div>
+                          )}
+                          {detection.metadata.size_gb !== undefined && (
+                            <div><span className="font-medium">Size:</span> {detection.metadata.size_gb} GB</div>
+                          )}
+                          {detection.metadata.days_unattached !== undefined && (
+                            <div><span className="font-medium">Unattached:</span> {detection.metadata.days_unattached}d</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-900">

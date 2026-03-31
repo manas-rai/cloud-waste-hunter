@@ -115,6 +115,7 @@ class EBSResourceCollector:
                         "state": volume["State"],
                         "volume_type": volume["VolumeType"],
                         "create_time": volume["CreateTime"],
+                        "availability_zone": volume.get("AvailabilityZone", ""),
                         "attachments": volume.get("Attachments", []),
                         "tags": {
                             tag["Key"]: tag["Value"] for tag in volume.get("Tags", [])

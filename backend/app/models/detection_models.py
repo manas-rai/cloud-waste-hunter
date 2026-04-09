@@ -116,6 +116,56 @@ class ScanResponse(BaseModel):
         }
 
 
+class NatGatewayDetectionModel(BaseModel):
+    """Pydantic response model for a single NAT Gateway detection"""
+
+    id: int | None = None
+    resource_id: str
+    region: str
+    account_id: str | None = None
+    vpc_id: str | None = None
+    subnet_id: str | None = None
+    bytes_in_7d: float
+    bytes_out_7d: float
+    total_bytes_7d: float
+    is_idle: bool
+    waste_score: float
+    detected_at: str | None = None
+
+    class Config:
+        json_schema_extra: ClassVar[dict[str, Any]] = {
+            "example": {
+                "id": 1,
+                "resource_id": "nat-0a1b2c3d4e5f67890",
+                "region": "us-east-1",
+                "account_id": "123456789012",
+                "vpc_id": "vpc-0a1b2c3d4e5f67890",
+                "subnet_id": "subnet-0a1b2c3d4e5f67890",
+                "bytes_in_7d": 500000000.0,
+                "bytes_out_7d": 200000000.0,
+                "total_bytes_7d": 700000000.0,
+                "is_idle": True,
+                "waste_score": 0.3,
+                "detected_at": "2025-01-01T00:00:00Z",
+            }
+        }
+
+
+class NatGatewayDetectionList(BaseModel):
+    """Response model for NAT Gateway detection list"""
+
+    detections: list[NatGatewayDetectionModel]
+    total: int
+
+    class Config:
+        json_schema_extra: ClassVar[dict[str, Any]] = {
+            "example": {
+                "detections": [],
+                "total": 5,
+            }
+        }
+
+
 class DetectionDetailResponse(BaseModel):
     """Response model for detection detail with preview"""
 

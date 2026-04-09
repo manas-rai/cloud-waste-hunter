@@ -127,6 +127,60 @@ async def get_detection(
     return detection.to_dict()
 
 
+@router.post("/nat-gateways/scan")
+async def scan_nat_gateways(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Scan NAT Gateways for idle detection and persist results
+
+    Returns:
+        Scan results with total and idle count
+    """
+    try:
+        result = await detection_service.scan_nat_gateways(db=db)
+    except Exception as e:
+        logger.exception("NAT Gateway scan failed", error=str(e), exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"NAT Gateway scan failed: {e!s}",
+        ) from e
+    return result
+
+
+@router.get("/nat-gateways")
+async def list_nat_gateway_detections(
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List stored NAT Gateway detections
+
+    Args:
+        limit: Page size (max 100)
+        offset: Pagination offset
+
+    Returns:
+        Paginated list of NAT Gateway detections
+    """
+    try:
+        result = await detection_service.list_nat_gateway_detections(
+            db=db,
+            limit=limit,
+            offset=offset,
+        )
+    except Exception as e:
+        logger.exception(
+            "List NAT Gateway detections failed", error=str(e), exc_info=True
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list NAT Gateway detections: {e!s}",
+        ) from e
+    return result
+
+
 @router.post("/{detection_id}/preview")
 async def preview_action(
     detection_id: int,

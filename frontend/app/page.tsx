@@ -9,6 +9,10 @@ export default function Home() {
     totalSavings: 0,
     pendingActions: 0,
   })
+  const [natGwStats, setNatGwStats] = useState({
+    total: 0,
+    idleCount: 0,
+  })
   const [scanning, setScanning] = useState(false)
 
   const fetchStats = () => {
@@ -32,6 +36,16 @@ export default function Home() {
         })
       })
       .catch(err => console.error('Failed to fetch stats:', err))
+
+    // Fetch NAT Gateway stats
+    fetch(`${apiUrl}/api/v1/detections/nat-gateways`)
+      .then(res => res.json())
+      .then(data => {
+        const detections = data.detections || []
+        const idleCount = detections.filter((d: any) => d.is_idle).length
+        setNatGwStats({ total: data.total || 0, idleCount })
+      })
+      .catch(err => console.error('Failed to fetch NAT Gateway stats:', err))
   }
 
   useEffect(() => {
@@ -206,8 +220,32 @@ export default function Home() {
           </ul>
         </div>
 
+        {/* NAT Gateway Summary Card */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">🌐 NAT Gateway Overview</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Detected</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{natGwStats.total}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Idle Candidates</p>
+              <p className="text-2xl font-bold text-orange-600 mt-1">{natGwStats.idleCount}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-3">
+            Idle = &lt; 1 GB total traffic over 7 days
+          </p>
+          <Link
+            href="/detections/nat-gateways"
+            className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-800"
+          >
+            View NAT Gateway detections →
+          </Link>
+        </div>
+
         {/* Resource Types Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h4 className="font-semibold text-gray-900 mb-2">🖥️ EC2 Instances</h4>
             <p className="text-sm text-gray-600">
@@ -224,6 +262,12 @@ export default function Home() {
             <h4 className="font-semibold text-gray-900 mb-2">📸 Snapshots</h4>
             <p className="text-sm text-gray-600">
               Identifies old snapshots (&gt;90 days) with no associated AMI
+            </p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-2">🌐 NAT Gateways</h4>
+            <p className="text-sm text-gray-600">
+              Flags gateways with &lt; 1 GB traffic over 7 days as idle
             </p>
           </div>
         </div>

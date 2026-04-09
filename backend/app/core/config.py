@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     EC2_IDLE_DAYS: int = 7
     EBS_UNATTACHED_DAYS: int = 30
     SNAPSHOT_AGE_DAYS: int = 90
+    NAT_GATEWAY_IDLE_BYTES_THRESHOLD: int = 1_000_000_000  # 1 GB
+    NAT_GATEWAY_LOOKBACK_DAYS: int = 7
 
     # Safety Settings
     DRY_RUN_ENABLED: bool = True

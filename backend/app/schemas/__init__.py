@@ -21,6 +21,7 @@ from app.schemas.base import (
 from app.schemas.detection import (
     Detection,
     DetectionStatus,
+    NatGatewayDetection,
     ResourceType,
 )
 
@@ -31,6 +32,7 @@ __all__ = [
     "Base",
     "Detection",
     "DetectionStatus",
+    "NatGatewayDetection",
     "ResourceType",
     "TimestampMixin",
 ]

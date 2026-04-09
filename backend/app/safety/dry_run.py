@@ -84,14 +84,37 @@ class DryRunExecutor:
         """
         Preview deleting an EBS snapshot
 
+        snapshot_data may contain live-enriched fields from SnapshotClient:
+          - snapshot_age_days: int
+          - snapshot_size_gb: float
+          - linked_ami_ids: list[str]
+
         Returns:
-            Preview result with impact analysis
+            Structured preview result including metadata and blocked_reason
         """
+        linked_ami_ids: list[str] = snapshot_data.get("linked_ami_ids", [])
+        blocked_reason: str | None = None
+        if linked_ami_ids:
+            blocked_reason = (
+                f"Snapshot is linked to active AMI(s): {', '.join(linked_ami_ids)}. "
+                "Deregister the AMI(s) before deleting this snapshot."
+            )
+
+        size_gb = snapshot_data.get("snapshot_size_gb") or snapshot_data.get(
+            "size_gb", 0
+        )
+
         return {
             "action": "delete_ebs_snapshot",
             "resource_id": snapshot_id,
             "resource_type": "ebs_snapshot",
             "dry_run": True,
+            "snapshot_age_days": snapshot_data.get("snapshot_age_days"),
+            "snapshot_size_gb": size_gb,
+            "linked_ami_id": linked_ami_ids[0] if linked_ami_ids else None,
+            "linked_ami_ids": linked_ami_ids,
+            "blocked_reason": blocked_reason,
+            "would_delete": not bool(linked_ami_ids),
             "impact": {
                 "snapshot_will_be": "permanently deleted",
                 "data_preserved": False,
@@ -99,7 +122,7 @@ class DryRunExecutor:
                 "estimated_savings_inr": snapshot_data.get(
                     "estimated_monthly_savings_inr", 0
                 ),
-                "size_gb": snapshot_data.get("size_gb", 0),
+                "size_gb": size_gb,
             },
             "risks": [
                 "PERMANENT data loss - snapshot cannot be recovered",
